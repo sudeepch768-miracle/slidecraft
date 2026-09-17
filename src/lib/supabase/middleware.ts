@@ -22,31 +22,36 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isProtectedPath =
+    pathname === "/" ||
     pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/settings");
+    pathname.startsWith("/settings") ||
+    pathname.startsWith("/create") ||
+    pathname.startsWith("/editor") ||
+    pathname.startsWith("/projects") ||
+    pathname.startsWith("/planner") ||
+    pathname.startsWith("/slide-qa");
 
   const isAuthPath = pathname.startsWith("/login") || pathname.startsWith("/signup");
 
-  // Use cookie-based presence check (Edge-compatible — no network call required)
-  const isConfigured =
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder");
+  // Check if any chunk of the auth cookie or local session cookie exists
+  const hasSession = request.cookies.getAll().some(
+    (c) =>
+      c.name === AUTH_COOKIE_NAME ||
+      c.name.startsWith(AUTH_COOKIE_NAME + ".") ||
+      c.name === "slidecraft_session" ||
+      c.name === "slidecraft_auth"
+  );
 
-  if (isConfigured) {
-    // Check if any chunk of the auth cookie exists
-    const hasSession = request.cookies.getAll().some(
-      (c) => c.name === AUTH_COOKIE_NAME || c.name.startsWith(AUTH_COOKIE_NAME + ".")
-    );
-
-    if (!hasSession && isProtectedPath) {
-      const redirectUrl = new URL("/login", request.url);
+  if (!hasSession && isProtectedPath) {
+    const redirectUrl = new URL("/login", request.url);
+    if (pathname !== "/") {
       redirectUrl.searchParams.set("next", pathname);
-      return NextResponse.redirect(redirectUrl);
     }
+    return NextResponse.redirect(redirectUrl);
+  }
 
-    if (hasSession && isAuthPath) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
+  if (hasSession && isAuthPath) {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return response;

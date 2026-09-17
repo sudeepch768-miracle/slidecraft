@@ -43,12 +43,15 @@ import {
   X,
   Loader2,
   PlayCircle,
+  LogOut,
+  User as UserIcon,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { cn } from "@/lib/utils";
 import { LandingBackground } from "@/components/landing/LandingBackground";
 import { DemoModal } from "@/components/landing/DemoModal";
 import { LandingFaq } from "@/components/landing/LandingFaq";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 // ─── Format Definitions & Capabilities ─────────────────────────────────────────
 
@@ -305,6 +308,19 @@ const THEME_PREVIEWS = [
 
 export default function GammaLandingPage() {
   const router = useRouter();
+  const { user, signOut } = useAuth();
+  const [hasSessionCookie, setHasSessionCookie] = useState(false);
+
+  React.useEffect(() => {
+    if (typeof document !== "undefined") {
+      setHasSessionCookie(
+        document.cookie.includes("slidecraft_session=active") ||
+        document.cookie.includes("slidecraft_auth=")
+      );
+    }
+  }, [user]);
+
+  const isLoggedIn = !!user || hasSessionCookie;
   const [composerTab, setComposerTab] = useState<"generate" | "paste" | "import">("generate");
   const [selectedFormat, setSelectedFormat] = useState("presentation");
   const [prompt, setPrompt] = useState("");
@@ -416,20 +432,44 @@ export default function GammaLandingPage() {
             <span>Tour</span>
           </button>
 
-          <Link
-            href="/login"
-            className="hidden sm:inline-flex text-xs font-medium px-3 py-1.5 rounded-xl hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-all active:scale-95"
-          >
-            Log in
-          </Link>
+          {isLoggedIn ? (
+            <div className="flex items-center gap-2">
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full gamma-btn-primary text-xs font-bold transition-all shadow-xs active:scale-95"
+              >
+                <span>Dashboard</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
 
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full gamma-btn-primary text-xs font-bold transition-all shadow-xs active:scale-95"
-          >
-            <span>Start for free</span>
-            <ArrowRight className="w-3 h-3" />
-          </Link>
+              <button
+                type="button"
+                onClick={() => signOut()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/80 hover:bg-rose-500/10 hover:border-rose-500/30 text-muted-foreground hover:text-rose-500 text-xs font-semibold transition-all active:scale-95 cursor-pointer"
+                title="Log out of SlideCraft"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Log out</span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login"
+                className="hidden sm:inline-flex text-xs font-medium px-3 py-1.5 rounded-xl hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-all active:scale-95"
+              >
+                Log in
+              </Link>
+
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full gamma-btn-primary text-xs font-bold transition-all shadow-xs active:scale-95"
+              >
+                <span>Start for free</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+          )}
 
           {/* Mobile hamburger menu toggle */}
           <button
@@ -504,13 +544,36 @@ export default function GammaLandingPage() {
                 <PlayCircle className="w-4 h-4" />
                 <span>Quick Tour</span>
               </button>
-              <Link
-                href="/login"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-xs font-semibold text-muted-foreground hover:text-foreground"
-              >
-                Log in
-              </Link>
+              {isLoggedIn ? (
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="text-xs font-bold text-primary hover:underline"
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      signOut();
+                    }}
+                    className="text-xs font-semibold text-rose-500 hover:text-rose-600 flex items-center gap-1 cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Log out</span>
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-xs font-semibold text-muted-foreground hover:text-foreground"
+                >
+                  Log in
+                </Link>
+              )}
             </div>
           </motion.div>
         )}
@@ -780,36 +843,38 @@ export default function GammaLandingPage() {
           </div>
 
           {/* Interactive Format Selector Tabs with Spring Highlight Pill */}
-          <div className="flex items-center justify-center gap-2 overflow-x-auto pb-4 mb-8">
-            {ALL_GENERATION_FORMATS.map((f) => {
-              const Icon = f.icon;
-              const isSelected = activeDetailFormatId === f.id;
-              return (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => setActiveDetailFormatId(f.id)}
-                  className={cn(
-                    "relative flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors border whitespace-nowrap cursor-pointer select-none active:scale-95",
-                    isSelected
-                      ? "border-primary text-primary"
-                      : "border-border bg-card/70 hover:bg-muted/70 text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {isSelected && (
-                    <motion.div
-                      layoutId="formatDetailActiveTab"
-                      className="absolute inset-0 rounded-xl bg-primary/10 ring-1 ring-primary shadow-xs"
-                      transition={{ type: "spring", stiffness: 450, damping: 32 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <Icon className="w-3.5 h-3.5" />
-                    <span>{f.name.split(" &")[0]}</span>
-                  </span>
-                </button>
-              );
-            })}
+          <div className="w-full overflow-x-auto pb-3 mb-8 scrollbar-thin scrollbar-thumb-muted-foreground/20">
+            <div className="flex items-center gap-2 w-max mx-auto px-1">
+              {ALL_GENERATION_FORMATS.map((f) => {
+                const Icon = f.icon;
+                const isSelected = activeDetailFormatId === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setActiveDetailFormatId(f.id)}
+                    className={cn(
+                      "relative flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors border whitespace-nowrap cursor-pointer select-none active:scale-95",
+                      isSelected
+                        ? "border-primary text-primary"
+                        : "border-border bg-card/70 hover:bg-muted/70 text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {isSelected && (
+                      <motion.div
+                        layoutId="formatDetailActiveTab"
+                        className="absolute inset-0 rounded-xl bg-primary/10 ring-1 ring-primary shadow-xs"
+                        transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center gap-2">
+                      <Icon className="w-3.5 h-3.5" />
+                      <span>{f.name.split(" &")[0]}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Active Format Spotlight Card with Smooth Crossfade */}
@@ -1404,9 +1469,19 @@ export default function GammaLandingPage() {
             <Link href="/dashboard" className="hover:text-foreground transition-colors">
               Workspace
             </Link>
-            <Link href="/login" className="hover:text-foreground transition-colors">
-              Sign In
-            </Link>
+            {isLoggedIn ? (
+              <button
+                type="button"
+                onClick={() => signOut()}
+                className="hover:text-foreground text-rose-500 hover:underline transition-colors cursor-pointer"
+              >
+                Sign Out
+              </button>
+            ) : (
+              <Link href="/login" className="hover:text-foreground transition-colors">
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       </footer>

@@ -31,8 +31,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check current session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
+      if (currentSession?.user) {
+        setSession(currentSession);
+        setUser(currentSession.user);
+      } else if (
+        typeof document !== "undefined" &&
+        (document.cookie.includes("slidecraft_session=active") || document.cookie.includes("slidecraft_auth="))
+      ) {
+        setUser({
+          id: "demo-user",
+          email: "creator@slidecraft.ai",
+          user_metadata: { full_name: "SlideCraft Creator" },
+        } as any);
+      }
       setLoading(false);
     });
 
@@ -40,8 +51,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
+      if (newSession?.user) {
+        setSession(newSession);
+        setUser(newSession.user);
+      } else if (
+        typeof document !== "undefined" &&
+        (document.cookie.includes("slidecraft_session=active") || document.cookie.includes("slidecraft_auth="))
+      ) {
+        setUser({
+          id: "demo-user",
+          email: "creator@slidecraft.ai",
+          user_metadata: { full_name: "SlideCraft Creator" },
+        } as any);
+      } else {
+        setSession(null);
+        setUser(null);
+      }
       setLoading(false);
     });
 
@@ -52,12 +77,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handleSignOut = async () => {
     try {
-      await authSignOut();
+      if (typeof document !== "undefined") {
+        document.cookie = "slidecraft_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+        document.cookie = "slidecraft_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+      }
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.removeItem("slidecraft_lamp_on");
+      }
+      try {
+        await authSignOut();
+      } catch {
+        // Safe fallback for local/offline sessions
+      }
       setUser(null);
       setSession(null);
-      router.push("/login");
+      window.location.href = "/login";
     } catch (err) {
       console.error("Sign out error:", err);
+      window.location.href = "/login";
     }
   };
 

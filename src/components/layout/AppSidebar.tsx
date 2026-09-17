@@ -18,6 +18,7 @@ import {
   Settings,
   HelpCircle,
   Zap,
+  Home,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -52,6 +53,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       .toUpperCase() || "GA";
 
   const MAIN_NAV = [
+    { label: "Home", href: "/", icon: Home },
     { label: "All gammas", href: "/dashboard", icon: FileText },
     { label: "Recent", href: "/dashboard?filter=recent", icon: Clock },
     { label: "Templates", href: "/create", icon: LayoutGrid },
@@ -68,8 +70,38 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     >
       {/* Upper Half: Brand, Workspace & Nav */}
       <div className="flex flex-col min-h-0">
+        {/* Brand & Return to Home Header */}
+        <div className="p-3 border-b border-border/70 flex items-center justify-between">
+          <Link
+            href="/"
+            onClick={onNavigate}
+            className="flex items-center gap-2 group select-none"
+            title="Return to SlideCraft Homepage"
+          >
+            <div className="w-7 h-7 rounded-lg gamma-gradient-primary text-white flex items-center justify-center font-bold text-xs shadow-xs group-hover:scale-105 transition-transform">
+              <Sparkles className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="font-extrabold text-xs tracking-tight text-foreground">SlideCraft</span>
+              <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                AI
+              </span>
+            </div>
+          </Link>
+
+          <Link
+            href="/"
+            onClick={onNavigate}
+            className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary/80 hover:bg-primary/10 px-2 py-1 rounded-md transition-colors"
+            title="Return to SlideCraft Homepage"
+          >
+            <Home className="w-3.5 h-3.5" />
+            <span>Home</span>
+          </Link>
+        </div>
+
         {/* Workspace Switcher Header */}
-        <div className="p-3.5 border-b border-border/70">
+        <div className="px-3.5 py-2 border-b border-border/70">
           <div className="relative">
             <button
               type="button"
@@ -122,7 +154,9 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           {MAIN_NAV.map((item) => {
             const Icon = item.icon;
             const isActive =
-              item.href === "/dashboard"
+              item.href === "/"
+                ? pathname === "/"
+                : item.href === "/dashboard"
                 ? pathname === "/dashboard"
                 : pathname.startsWith(item.href);
 

@@ -18,6 +18,7 @@ import {
   X,
   Search,
   Command,
+  Home,
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -58,8 +59,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   return (
     <header className="h-14 w-full border-b border-border/80 bg-card/95 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between z-30 sticky top-0 shadow-sm select-none transition-colors">
       {/* Left: Brand Logo & Title */}
-      <div className="flex items-center gap-4 min-w-0">
-        <Link href="/dashboard" className="flex items-center gap-2.5 group">
+      <div className="flex items-center gap-2.5 shrink-0">
+        <Link href="/" className="flex items-center gap-2 group select-none" title="Return to SlideCraft Homepage">
           <motion.div
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
@@ -67,7 +68,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           >
             S
           </motion.div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <span className="font-bold text-sm tracking-tight text-foreground">
               SlideCraft
             </span>
@@ -77,26 +78,38 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </div>
         </Link>
 
+        {/* Quick Return to Homepage Pill */}
+        <Link
+          href="/"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border/80 hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+          title="Return to SlideCraft Homepage"
+        >
+          <Home className="w-3.5 h-3.5 text-primary" />
+          <span>Home</span>
+        </Link>
+
         {/* Workspace Pill */}
-        <div className="hidden lg:flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-muted text-[11px] font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-colors border border-transparent hover:border-border/60">
+        <div className="hidden 2xl:flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-muted text-[11px] font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-colors border border-transparent hover:border-border/60 whitespace-nowrap">
           <span>Personal Workspace</span>
           <ChevronDown className="w-3 h-3 opacity-60" />
         </div>
 
         {title && (
-          <div className="hidden xl:flex items-center gap-2 pl-3 border-l border-border/70 text-xs">
-            <span className="font-semibold text-foreground truncate max-w-[220px]">{title}</span>
+          <div className="hidden 2xl:flex items-center gap-2 pl-3 border-l border-border/70 text-xs">
+            <span className="font-semibold text-foreground truncate max-w-[200px]">{title}</span>
             {subtitle && <span className="text-muted-foreground hidden 2xl:inline text-[11px]">• {subtitle}</span>}
           </div>
         )}
       </div>
 
       {/* Center: Minimalist Top Navigation Tabs */}
-      <nav className="hidden md:flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border/60">
+      <nav className="hidden md:flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border/60 shrink-0">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive =
-            item.href === "/dashboard"
+            item.href === "/"
+              ? pathname === "/"
+              : item.href === "/dashboard"
               ? pathname === "/dashboard"
               : item.href === "/create"
               ? pathname.startsWith("/create")
@@ -197,6 +210,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 </div>
 
                 <Link
+                  href="/"
+                  onClick={() => setUserMenuOpen(false)}
+                  className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-medium rounded-lg hover:bg-muted text-foreground transition-colors"
+                >
+                  <Home className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Return to Homepage</span>
+                </Link>
+
+                <Link
                   href="/dashboard"
                   onClick={() => setUserMenuOpen(false)}
                   className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-medium rounded-lg hover:bg-muted text-foreground transition-colors"
@@ -230,7 +252,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                       setUserMenuOpen(false);
                       signOut();
                     }}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-medium rounded-lg hover:bg-rose-500/10 text-rose-500 transition-colors text-left"
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-medium rounded-lg hover:bg-rose-500/10 text-rose-500 transition-colors text-left cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Sign Out</span>
@@ -260,6 +282,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             exit={{ opacity: 0, height: 0 }}
             className="absolute top-14 left-0 right-0 bg-card border-b border-border shadow-xl p-4 md:hidden flex flex-col gap-2 z-40"
           >
+            {/* Return to Homepage Link */}
+            <Link
+              href="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-primary hover:bg-muted"
+            >
+              <Home className="w-4 h-4 text-primary" />
+              <span>Return to Homepage</span>
+            </Link>
+
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               return (
@@ -274,6 +306,20 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 </Link>
               );
             })}
+
+            <div className="pt-2 border-t border-border">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  signOut();
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-rose-500 hover:bg-rose-500/10 cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Log Out</span>
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

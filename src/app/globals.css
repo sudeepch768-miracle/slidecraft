@@ -1,0 +1,376 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Gamma.app Authentic Light Theme: Warm Canvas (#FAF9F6), Crisp White Cards, Violet/Fuchsia Accents */
+    --background: 40 20% 98%;           /* #FAF9F6 warm off-white canvas */
+    --foreground: 240 10% 3.9%;          /* #18181B deep graphite text */
+    --card: 0 0% 100%;                  /* #FFFFFF crisp white card surface */
+    --card-foreground: 240 10% 3.9%;
+    --popover: 40 15% 96%;              /* #F5F4F0 soft cream popover surface */
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 262.1 83.3% 57.8%;       /* #8B5CF6 signature Gamma violet */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 280 75% 60%;           /* #A855F7 magenta-purple accent */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 4.8% 95.9%;            /* #F4F4F5 soft zinc */
+    --muted-foreground: 240 3.8% 46.1%;  /* #71717A muted slate */
+    --accent: 330 81% 60%;              /* #EC4899 fuchsia accent */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 5.9% 90%;             /* #E4E4E7 delicate border */
+    --input: 240 5.9% 90%;
+    --ring: 262.1 83.3% 57.8%;
+    --radius: 1rem;
+  }
+
+  .dark {
+    /* Gamma.app Authentic Dark Theme: Deep Obsidian (#0D0D12), Warm Charcoal (#17171F), Glowing Violet/Fuchsia */
+    --background: 240 14% 6%;           /* #0D0D12 deep obsidian black */
+    --foreground: 240 5% 96%;           /* #F4F4F6 bright crisp white */
+    --card: 240 12% 10.5%;              /* #17171F elevated charcoal card */
+    --card-foreground: 240 5% 96%;
+    --popover: 240 12% 14%;             /* #21212B popover surface */
+    --popover-foreground: 240 5% 96%;
+    --primary: 263.4 90% 66%;           /* #9D6CFA glowing Gamma violet */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 292 84% 61%;           /* #C04BF7 vivid purple-fuchsia */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 9% 15%;                /* #24242F muted surface */
+    --muted-foreground: 240 5% 65%;     /* #A1A1AA soft zinc text */
+    --accent: 328 85% 65%;              /* #F45BA5 fuchsia glow */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 8% 18%;               /* #2A2A37 subtle hairline border */
+    --input: 240 8% 18%;
+    --ring: 263.4 90% 66%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Studio Canvas Background Subtle Dot Grid */
+.bg-canvas-dots {
+  background-image: radial-gradient(rgba(139, 92, 246, 0.18) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.dark .bg-canvas-dots {
+  background-image: radial-gradient(rgba(168, 85, 247, 0.15) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Gamma Signature Gradient */
+.gamma-gradient-primary {
+  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 50%, #ec4899 100%);
+}
+
+.gamma-gradient-text {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dark .gamma-gradient-text {
+  background: linear-gradient(135deg, #c084fc 0%, #f472b6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Gamma-Style Micro-Interactions & Surfaces */
+.gamma-card-hover {
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms ease;
+}
+
+.gamma-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -6px rgba(124, 58, 237, 0.08);
+}
+
+.dark .gamma-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(168, 85, 247, 0.2);
+}
+
+.gamma-glow-subtle {
+  background: radial-gradient(circle 500px at 50% 30%, rgba(139, 92, 246, 0.08), transparent 70%);
+}
+
+.dark .gamma-glow-subtle {
+  background: radial-gradient(circle 500px at 50% 30%, rgba(168, 85, 247, 0.14), transparent 70%);
+}
+
+/* Composer Container */
+.gamma-composer {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 12px 32px -8px rgba(124, 58, 237, 0.08);
+}
+
+.dark .gamma-composer {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 20px 48px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(168, 85, 247, 0.15);
+}
+
+/* Docked Side Drawers */
+.gamma-docked-panel {
+  background: hsl(var(--card) / 0.96);
+  backdrop-filter: blur(16px);
+  border-color: hsl(var(--border));
+}
+
+.dark .gamma-docked-panel {
+  background: hsl(var(--popover) / 0.95);
+  backdrop-filter: blur(16px);
+  border-color: hsl(var(--border));
+}
+
+/* Gamma Glass Surface */
+.gamma-glass {
+  background: hsl(var(--card) / 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.8);
+}
+
+.dark .gamma-glass {
+  background: hsl(var(--card) / 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Gamma Signature Button */
+.gamma-btn-primary {
+  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 50%, #ec4899 100%);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 4px 14px -2px rgba(124, 58, 237, 0.35);
+  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gamma-btn-primary:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px -2px rgba(124, 58, 237, 0.45);
+}
+
+.gamma-btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Gamma Secondary Outline Button */
+.gamma-btn-secondary {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+  font-weight: 500;
+  transition: all 150ms ease;
+}
+
+.gamma-btn-secondary:hover {
+  background: hsl(var(--muted));
+  border-color: hsl(var(--border) / 1.5);
+  color: hsl(var(--foreground));
+}
+
+/* Gamma Pill Tag */
+.gamma-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: rgba(139, 92, 246, 0.08);
+  color: #8b5cf6;
+  border: 1px solid rgba(139, 92, 246, 0.18);
+}
+
+.dark .gamma-tag {
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.25);
+}
+
+
+/* Shimmer Skeleton for Polished AI Generation State */
+@keyframes gamma-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.gamma-shimmer-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.gamma-shimmer-effect::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.12) 20%,
+    rgba(255, 255, 255, 0.25) 60%,
+    rgba(255, 255, 255, 0)
+  );
+  animation: gamma-shimmer 1.8s infinite;
+}
+
+/* ─── Ambient Animated Background Keyframes ───────────────────────────── */
+@keyframes orb-drift-1 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(60px, -45px, 0) scale(1.12);
+  }
+  66% {
+    transform: translate3d(-35px, 35px, 0) scale(0.92);
+  }
+}
+
+@keyframes orb-drift-2 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(-55px, 50px, 0) scale(1.08);
+  }
+  66% {
+    transform: translate3d(40px, -30px, 0) scale(0.95);
+  }
+}
+
+@keyframes orb-drift-3 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(50px, 40px, 0) scale(1.15);
+  }
+}
+
+@keyframes orb-drift-4 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-40px, -50px, 0) scale(1.1);
+  }
+}
+
+@keyframes subtle-pulse-glow {
+  0%, 100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-orb-1 {
+  animation: orb-drift-1 24s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.animate-orb-2 {
+  animation: orb-drift-2 28s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.animate-orb-3 {
+  animation: orb-drift-3 22s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.animate-orb-4 {
+  animation: orb-drift-4 26s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.animate-pulse-glow {
+  animation: subtle-pulse-glow 8s ease-in-out infinite alternate;
+}
+
+/* Subtle background grid mask */
+.landing-grid-pattern {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(139, 92, 246, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(139, 92, 246, 0.05) 1px, transparent 1px);
+}
+
+.dark .landing-grid-pattern {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(168, 85, 247, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(168, 85, 247, 0.08) 1px, transparent 1px);
+}
+
+.landing-radial-vignette {
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 80%);
+}
+
+/* Custom modern scrollbars */
+html {
+  scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+/* Reduced-motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-orb-1,
+  .animate-orb-2,
+  .animate-orb-3,
+  .animate-orb-4,
+  .animate-pulse-glow {
+    animation: none !important;
+    transform: none !important;
+  }
+}

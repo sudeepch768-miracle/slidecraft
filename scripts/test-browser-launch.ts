@@ -1,0 +1,1 @@
+import { chromium } from 'playwright'; async function run() { const browser = await chromium.launch({ channel: 'msedge', headless: true }); console.log('Edge launched successfully!'); await browser.close(); } run();

@@ -48,7 +48,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { cn } from "@/lib/utils";
-import { LandingBackground } from "@/components/landing/LandingBackground";
+import { MidnightVioletBackground } from "@/components/landing/MidnightVioletBackground";
 import { DemoModal } from "@/components/landing/DemoModal";
 import { LandingFaq } from "@/components/landing/LandingFaq";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -360,126 +360,126 @@ export default function GammaLandingPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-screen flex flex-col bg-background/50 text-foreground selection:bg-primary/20 selection:text-primary overflow-x-hidden font-sans">
-      {/* ─── Sophisticated Ambient Animated Background ─────────────────── */}
-      <LandingBackground />
+    <div className="dark relative min-h-screen w-screen flex flex-col bg-[#070914] text-[#F8FAFC] selection:bg-pink-500/30 selection:text-pink-300 overflow-x-hidden font-sans">
+      {/* ─── Midnight Violet Layered Animated Background ─────────────────── */}
+      <MidnightVioletBackground />
 
-      {/* ─── 1. Minimalist Frosted Glass Navigation Bar ──────────────────────── */}
-      <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-background/75 backdrop-blur-xl px-4 sm:px-8 h-14 flex items-center justify-between transition-colors">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2.5 group select-none">
-            <div className="w-7 h-7 rounded-lg gamma-gradient-primary text-white flex items-center justify-center font-bold text-xs shadow-sm shadow-purple-500/25 group-hover:scale-105 transition-transform duration-200">
-              <Sparkles className="w-3.5 h-3.5" />
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-sm tracking-tight text-foreground">SlideCraft</span>
-              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                AI
-              </span>
-            </div>
-          </Link>
-
-          <nav className="hidden lg:flex items-center gap-1 text-xs font-medium text-muted-foreground">
-            <a
-              href="#everything"
-              className="px-3 py-1.5 rounded-full hover:text-foreground hover:bg-muted/60 transition-all flex items-center gap-1.5"
-            >
-              <Sparkles className="w-3 h-3 text-primary" />
-              <span className="text-foreground font-semibold">What You Can Generate</span>
-            </a>
-            <a
-              href="#matrix"
-              className="px-3 py-1.5 rounded-full hover:text-foreground hover:bg-muted/60 transition-all"
-            >
-              Capabilities
-            </a>
-            <a
-              href="#showcase"
-              className="px-3 py-1.5 rounded-full hover:text-foreground hover:bg-muted/60 transition-all"
-            >
-              Card Studio
-            </a>
-            <a
-              href="#theming"
-              className="px-3 py-1.5 rounded-full hover:text-foreground hover:bg-muted/60 transition-all"
-            >
-              Themes
-            </a>
-            <a
-              href="#faq"
-              className="px-3 py-1.5 rounded-full hover:text-foreground hover:bg-muted/60 transition-all"
-            >
-              FAQ
-            </a>
-            <Link
-              href="/dashboard"
-              className="px-3 py-1.5 rounded-full hover:text-foreground hover:bg-muted/60 transition-all"
-            >
-              Workspace
+      {/* ─── 1. Minimalist Frosted Glass Navigation Bar (Floating Capsule) ─── */}
+      <header className="sticky top-3 sm:top-4 z-50 w-full px-4 sm:px-6 md:px-8 max-w-6xl mx-auto transition-all">
+        <div className="rounded-full border border-violet-500/20 bg-[#090b18]/75 backdrop-blur-xl px-4 sm:px-6 h-13 sm:h-14 flex items-center justify-between shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+          <div className="flex items-center gap-6">
+            <Link href="/" className="flex items-center gap-2.5 group select-none">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#7C3AED] via-[#9333EA] to-[#EC4899] text-white flex items-center justify-center font-bold text-xs shadow-md shadow-purple-500/30 group-hover:scale-105 transition-transform duration-200">
+                <Sparkles className="w-3.5 h-3.5 fill-white text-white" />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-extrabold text-sm tracking-tight text-[#F8FAFC]">SlideCraft</span>
+                <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-[#13162b] text-violet-300 border border-violet-500/30">
+                  AI
+                </span>
+              </div>
             </Link>
-          </nav>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-
-          <button
-            type="button"
-            onClick={() => setIsDemoModalOpen(true)}
-            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-xl hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-all active:scale-95 cursor-pointer"
-          >
-            <PlayCircle className="w-3.5 h-3.5 text-primary" />
-            <span>Tour</span>
-          </button>
-
-          {isLoggedIn ? (
-            <div className="flex items-center gap-2">
+            <nav className="hidden lg:flex items-center gap-5 xl:gap-6 text-xs font-medium text-[#A7A9BC]">
+              <a
+                href="#everything"
+                className="hover:text-white transition-colors"
+              >
+                What You Can Generate
+              </a>
+              <a
+                href="#matrix"
+                className="hover:text-white transition-colors"
+              >
+                Capabilities
+              </a>
+              <a
+                href="#showcase"
+                className="hover:text-white transition-colors"
+              >
+                Card Studio
+              </a>
+              <a
+                href="#theming"
+                className="hover:text-white transition-colors"
+              >
+                Themes
+              </a>
+              <a
+                href="#faq"
+                className="hover:text-white transition-colors"
+              >
+                FAQ
+              </a>
               <Link
                 href="/dashboard"
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full gamma-btn-primary text-xs font-bold transition-all shadow-xs active:scale-95"
+                className="hover:text-white transition-colors"
               >
-                <span>Dashboard</span>
-                <ArrowRight className="w-3 h-3" />
+                Workspace
               </Link>
+            </nav>
+          </div>
 
-              <button
-                type="button"
-                onClick={() => signOut()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/80 hover:bg-rose-500/10 hover:border-rose-500/30 text-muted-foreground hover:text-rose-500 text-xs font-semibold transition-all active:scale-95 cursor-pointer"
-                title="Log out of SlideCraft"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Log out</span>
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Link
-                href="/login"
-                className="hidden sm:inline-flex text-xs font-medium px-3 py-1.5 rounded-xl hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-all active:scale-95"
-              >
-                Log in
-              </Link>
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            <ThemeToggle className="!rounded-full !w-8 !h-8 !p-0 flex items-center justify-center !bg-[#0f1430]/70 !border-violet-500/20 hover:!border-amber-400/40 shadow-[0_0_12px_rgba(251,191,36,0.15)]" />
 
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full gamma-btn-primary text-xs font-bold transition-all shadow-xs active:scale-95"
-              >
-                <span>Start for free</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          )}
+            <button
+              type="button"
+              onClick={() => setIsDemoModalOpen(true)}
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium px-3.5 py-1.5 rounded-full midnight-glass-interactive text-[#e2e4f0] hover:text-white transition-all active:scale-95 cursor-pointer"
+            >
+              <Play className="w-3 h-3 fill-pink-500 text-pink-500" />
+              <span>Tour</span>
+            </button>
 
-          {/* Mobile hamburger menu toggle */}
-          <button
-            type="button"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-2 rounded-xl border border-border/80 bg-card hover:bg-muted/80 text-foreground transition-all cursor-pointer active:scale-90"
-            aria-label="Toggle navigation menu"
-          >
-            {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          </button>
+            {isLoggedIn ? (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full btn-midnight-gradient text-xs font-bold transition-all shadow-md active:scale-95"
+                >
+                  <span>Dashboard</span>
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => signOut()}
+                  className="inline-flex items-center px-3.5 py-1.5 rounded-full midnight-glass-interactive hover:bg-rose-500/15 hover:border-rose-500/40 text-[#A7A9BC] hover:text-white text-xs font-semibold transition-all active:scale-95 cursor-pointer"
+                  title="Log out of SlideCraft"
+                >
+                  <span>Log out</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/login"
+                  className="hidden sm:inline-flex text-xs font-medium px-3.5 py-1.5 rounded-full midnight-glass-interactive text-[#A7A9BC] hover:text-white transition-all active:scale-95"
+                >
+                  Log in
+                </Link>
+
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full btn-midnight-gradient text-xs font-bold transition-all shadow-md active:scale-95"
+                >
+                  <span>Dashboard</span>
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+            )}
+
+            {/* Mobile hamburger menu toggle */}
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="lg:hidden p-2 rounded-full border border-violet-500/20 bg-[#0c1026]/80 hover:bg-violet-500/10 text-white transition-all cursor-pointer active:scale-90"
+              aria-label="Toggle navigation menu"
+            >
+              {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -580,38 +580,44 @@ export default function GammaLandingPage() {
       </AnimatePresence>
 
       {/* ─── 2. Hero Section with Signature Gamma Multi-Format Composer ───────── */}
-      <main className="flex-1 flex flex-col">
+      <main className="relative z-10 flex-1 flex flex-col">
         <section className="relative pt-14 pb-14 px-4 sm:px-6 md:px-12 max-w-5xl mx-auto w-full text-center space-y-6">
-          {/* Ambient radial glow */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-96 gamma-glow-subtle pointer-events-none -z-10" />
-
           {/* Announcement badge */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 text-xs font-medium shadow-xs"
+            className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/25 text-xs font-medium shadow-[0_0_15px_rgba(139,92,246,0.15)] backdrop-blur-md"
           >
-            <Sparkles className="w-3.5 h-3.5 text-purple-500 animate-pulse" />
-            <span>8 Visual Formats · 25+ Archetypes · 100% Vector PPTX & Docx</span>
+            <Sparkles className="w-3.5 h-3.5 text-pink-400 animate-pulse" />
+            <span>8 Visual Formats · 25+ Archetypes · 100% Vector PPTX &amp; Docx</span>
           </motion.div>
 
-          {/* Headline */}
+          {/* Headline matching reference image */}
           <motion.h1
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.05 }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-foreground leading-[1.08] max-w-4xl mx-auto"
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-[#F8FAFC] leading-[1.08] max-w-4xl mx-auto"
           >
-            A new medium for presenting ideas,{" "}
-            <span className="gamma-gradient-text">powered by AI.</span>
+            A new medium for<br className="hidden sm:inline" />{" "}
+            presenting ideas,{" "}
+            <span className="bg-gradient-to-r from-[#EC4899] to-[#F472B6] bg-clip-text text-transparent">
+              powered
+            </span>
+            <br />
+            <span className="text-[#8B7CFF]">by </span>
+            <span className="bg-gradient-to-r from-[#FB923C] to-[#F5B84B] bg-clip-text text-transparent">
+              AI.
+            </span>
+            <span className="text-[#EC4899] animate-pulse font-light ml-0.5">|</span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed"
+            className="text-base sm:text-lg text-[#A7A9BC] max-w-2xl mx-auto leading-relaxed"
           >
             Generate presentations, posters, infographics, diagrams, charts, and executive documents
             in seconds. Fully responsive cards, 100% editable outside SlideCraft.
@@ -627,24 +633,27 @@ export default function GammaLandingPage() {
             <button
               type="button"
               onClick={() => setIsDemoModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full gamma-btn-secondary text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer hover:border-primary/50"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full midnight-glass-interactive text-xs font-semibold text-[#F8FAFC] shadow-sm transition-all active:scale-95 cursor-pointer hover:border-pink-500/40"
             >
-              <PlayCircle className="w-3.5 h-3.5 text-primary" />
+              <Play className="w-3.5 h-3.5 fill-pink-500 text-pink-500" />
               <span>Explore 60-second studio overview</span>
             </button>
           </motion.div>
 
-          {/* ─── Signature Central Gamma Composer ────────────────────────────── */}
+          {/* ─── Signature Midnight Violet Glass Generator Card ───────────── */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.15 }}
-            className="pt-2 max-w-3xl mx-auto w-full"
+            className="pt-2 max-w-3xl mx-auto w-full relative"
           >
-            <div className="gamma-composer rounded-3xl p-3 sm:p-5 text-left transition-all shadow-xl">
+            <div className="midnight-glass midnight-card-glow rounded-3xl p-3 sm:p-5 text-left transition-all relative overflow-hidden">
+              {/* Subtle inner top highlight border */}
+              <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-pink-500/40 to-transparent pointer-events-none" />
+
               {/* Top Workflow Modes Tabs: Generate / Paste in text / Import */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-3 border-b border-border/60 gap-3">
-                <div className="flex items-center gap-1 p-1 bg-muted/40 rounded-full border border-border/50">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-3 border-b border-violet-500/15 gap-3">
+                <div className="flex items-center gap-1 p-1 bg-[#090b18]/60 rounded-full border border-violet-500/20">
                   {[
                     { id: "generate", label: "Generate", icon: Sparkles },
                     { id: "paste", label: "Paste in text", icon: FileText },
@@ -661,13 +670,13 @@ export default function GammaLandingPage() {
                           "relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-200 cursor-pointer select-none",
                           isActive
                             ? "text-white"
-                            : "text-muted-foreground hover:text-foreground"
+                            : "text-[#A7A9BC] hover:text-white"
                         )}
                       >
                         {isActive && (
                           <motion.div
                             layoutId="composerActiveTabPill"
-                            className="absolute inset-0 rounded-full bg-primary shadow-xs"
+                            className="absolute inset-0 rounded-full bg-gradient-to-r from-[#EC4899] to-[#F43F5E] shadow-[0_0_12px_rgba(236,72,153,0.4)]"
                             transition={{ type: "spring", stiffness: 450, damping: 32 }}
                           />
                         )}
@@ -691,10 +700,10 @@ export default function GammaLandingPage() {
                         if (!prompt) setPrompt(f.samplePrompt);
                       }}
                       className={cn(
-                        "px-2.5 py-1 rounded-lg font-medium transition-all whitespace-nowrap active:scale-95 cursor-pointer",
+                        "px-3 py-1 rounded-full font-medium transition-all whitespace-nowrap active:scale-95 cursor-pointer",
                         selectedFormat === f.id
-                          ? "bg-primary/15 text-primary font-semibold border border-primary/30 shadow-xs"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-transparent"
+                          ? "bg-pink-500/15 text-pink-400 font-semibold border border-pink-500/40 shadow-[0_0_10px_rgba(236,72,153,0.2)]"
+                          : "text-[#A7A9BC] hover:text-white hover:bg-violet-500/10 border border-transparent"
                       )}
                     >
                       {f.name.split(" ")[0]}
@@ -702,7 +711,7 @@ export default function GammaLandingPage() {
                   ))}
                   <a
                     href="#everything"
-                    className="text-[11px] text-primary hover:underline font-semibold pl-1"
+                    className="text-[11px] text-[#A7A9BC] hover:text-pink-400 font-medium pl-1 transition-colors"
                   >
                     +3 More
                   </a>
@@ -731,7 +740,7 @@ export default function GammaLandingPage() {
                         }}
                         rows={3}
                         placeholder={`Describe your ${currentFormatObj.name.toLowerCase()} (e.g. "${currentFormatObj.samplePrompt.slice(0, 90)}...")...`}
-                        className="w-full text-sm sm:text-base bg-transparent border-none resize-none focus:outline-none placeholder:text-muted-foreground/60 text-foreground leading-relaxed"
+                        className="w-full text-sm sm:text-base bg-transparent border-none resize-none focus:outline-none placeholder:text-[#A7A9BC]/50 text-[#F8FAFC] leading-relaxed"
                       />
                     </motion.div>
                   ) : composerTab === "paste" ? (
@@ -747,7 +756,7 @@ export default function GammaLandingPage() {
                         onChange={(e) => setPasteText(e.target.value)}
                         rows={4}
                         placeholder="Paste rough notes, meeting transcripts, research bullet points, or document draft here..."
-                        className="w-full text-xs sm:text-sm font-mono bg-transparent border-none resize-none focus:outline-none placeholder:text-muted-foreground/60 text-foreground leading-relaxed"
+                        className="w-full text-xs sm:text-sm font-mono bg-transparent border-none resize-none focus:outline-none placeholder:text-[#A7A9BC]/50 text-[#F8FAFC] leading-relaxed"
                       />
                     </motion.div>
                   ) : (
@@ -757,15 +766,15 @@ export default function GammaLandingPage() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -4 }}
                       transition={{ duration: 0.18 }}
-                      className="py-6 text-center border-2 border-dashed border-border/80 rounded-2xl bg-muted/20 flex flex-col items-center justify-center gap-2"
+                      className="py-6 text-center border-2 border-dashed border-violet-500/25 rounded-2xl bg-violet-950/20 flex flex-col items-center justify-center gap-2"
                     >
-                      <FileUp className="w-8 h-8 text-primary opacity-80 animate-pulse" />
-                      <p className="text-xs font-semibold text-foreground">
+                      <FileUp className="w-8 h-8 text-pink-400 opacity-80 animate-pulse" />
+                      <p className="text-xs font-semibold text-[#F8FAFC]">
                         Drop PowerPoint, Word, or PDF file to enhance
                       </p>
                       <Link
                         href="/dashboard"
-                        className="text-[11px] text-primary hover:underline font-medium"
+                        className="text-[11px] text-pink-400 hover:underline font-medium"
                       >
                         Or import from URL in workspace →
                       </Link>
@@ -775,12 +784,12 @@ export default function GammaLandingPage() {
               </div>
 
               {/* Bottom Actions Row */}
-              <div className="flex items-center justify-between pt-2.5 border-t border-border/60 gap-2">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center justify-between pt-2.5 border-t border-violet-500/15 gap-2">
+                <div className="flex items-center gap-2 text-xs text-[#A7A9BC]">
                   <span className="text-[11px] opacity-80 flex items-center gap-1.5">
-                    <Check className="w-3 h-3 text-emerald-500" />
+                    <Check className="w-3 h-3 text-emerald-400" />
                     <span>Selected format:</span>
-                    <strong className="text-foreground">{currentFormatObj.name}</strong>
+                    <strong className="text-[#F8FAFC]">{currentFormatObj.name}</strong>
                     <span className="opacity-60 hidden sm:inline">({currentFormatObj.ratio})</span>
                   </span>
                 </div>
@@ -789,7 +798,7 @@ export default function GammaLandingPage() {
                   type="button"
                   onClick={() => handleLaunch()}
                   disabled={isLaunching}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full gamma-btn-primary font-bold text-xs shadow-md transition-all flex-shrink-0 cursor-pointer active:scale-95 disabled:opacity-80"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full btn-midnight-gradient font-bold text-xs shadow-md transition-all flex-shrink-0 cursor-pointer active:scale-95 disabled:opacity-80"
                 >
                   {isLaunching ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -806,22 +815,13 @@ export default function GammaLandingPage() {
               </div>
             </div>
 
-            {/* Quick Inspiration Chips */}
-            <div className="flex flex-wrap items-center justify-center gap-1.5 pt-3">
-              {ALL_GENERATION_FORMATS.slice(0, 5).map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setPrompt(item.samplePrompt);
-                    setSelectedFormat(item.id);
-                    setComposerTab("generate");
-                  }}
-                  className="text-[11px] px-3 py-1 rounded-full bg-card/80 hover:bg-muted border border-border text-muted-foreground hover:text-foreground transition-all duration-200 hover:scale-[1.03] active:scale-95 truncate max-w-[280px] cursor-pointer shadow-2xs"
-                >
-                  ✦ {item.name.split(" ")[0]}: {item.samplePrompt.slice(0, 32)}...
-                </button>
-              ))}
+            {/* Bottom Reference Accent: Stacked IDEAS — INTO — IMPACT on the bottom right */}
+            <div className="flex items-center justify-end pt-4 pr-1 select-none">
+              <div className="flex flex-col items-end text-[10px] tracking-[0.28em] uppercase text-[#A7A9BC]/50 font-mono leading-tight">
+                <span>IDEAS</span>
+                <span>— INTO —</span>
+                <span>IMPACT</span>
+              </div>
             </div>
           </motion.div>
         </section>
@@ -856,14 +856,14 @@ export default function GammaLandingPage() {
                     className={cn(
                       "relative flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors border whitespace-nowrap cursor-pointer select-none active:scale-95",
                       isSelected
-                        ? "border-primary text-primary"
-                        : "border-border bg-card/70 hover:bg-muted/70 text-muted-foreground hover:text-foreground"
+                        ? "border-pink-500/40 text-pink-400 shadow-[0_0_12px_rgba(236,72,153,0.2)]"
+                        : "border-violet-500/15 bg-[#0c1026]/70 hover:bg-violet-500/10 text-[#B7B5C8] hover:text-[#F8FAFC]"
                     )}
                   >
                     {isSelected && (
                       <motion.div
                         layoutId="formatDetailActiveTab"
-                        className="absolute inset-0 rounded-xl bg-primary/10 ring-1 ring-primary shadow-xs"
+                        className="absolute inset-0 rounded-xl bg-pink-500/15 ring-1 ring-pink-500/35 shadow-xs"
                         transition={{ type: "spring", stiffness: 450, damping: 32 }}
                       />
                     )}
@@ -885,7 +885,7 @@ export default function GammaLandingPage() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.99 }}
               transition={{ duration: 0.22, ease: "easeOut" }}
-              className="rounded-3xl border border-border bg-card/90 backdrop-blur-sm p-6 sm:p-8 md:p-10 shadow-xl relative overflow-hidden"
+              className="rounded-3xl border border-violet-500/20 bg-[#0c1026]/85 backdrop-blur-xl p-6 sm:p-8 md:p-10 shadow-2xl relative overflow-hidden"
             >
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
               {/* Left Column: Details, Capabilities, and Launch */}
@@ -951,7 +951,7 @@ export default function GammaLandingPage() {
                   <button
                     type="button"
                     onClick={() => handleLaunch(activeDetailFormat.samplePrompt, activeDetailFormat.id)}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full gamma-btn-primary font-bold text-xs shadow-md transition-all cursor-pointer"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full btn-midnight-gradient font-bold text-xs shadow-md transition-all cursor-pointer"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>Generate this format with AI</span>
@@ -1408,26 +1408,26 @@ export default function GammaLandingPage() {
 
         {/* ─── 8. Final Call to Action ─────────────────────────────────────────── */}
         <section className="py-20 px-4 sm:px-6 md:px-12 max-w-4xl mx-auto w-full text-center space-y-6">
-          <div className="p-8 sm:p-12 rounded-3xl gamma-glass border border-purple-500/20 text-center space-y-6 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+          <div className="p-8 sm:p-12 rounded-3xl midnight-glass midnight-card-glow border border-violet-500/25 text-center space-y-6 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/15 rounded-full blur-3xl pointer-events-none -z-10" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/15 rounded-full blur-3xl pointer-events-none -z-10" />
 
-            <div className="w-12 h-12 rounded-2xl gamma-gradient-primary text-white flex items-center justify-center mx-auto shadow-md">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#7C3AED] via-[#9333EA] to-[#EC4899] text-white flex items-center justify-center mx-auto shadow-md shadow-purple-500/30">
               <Sparkles className="w-6 h-6" />
             </div>
 
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-foreground tracking-tight">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#F8FAFC] tracking-tight">
               Ready to generate your first creation?
             </h2>
 
-            <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            <p className="text-sm sm:text-base text-[#B7B5C8] max-w-xl mx-auto leading-relaxed">
               Join millions of creators generating presentations, posters, infographics, and technical diagrams at the speed of thought.
             </p>
 
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 href="/dashboard"
-                className="w-full sm:w-auto px-6 py-3 rounded-full gamma-btn-primary font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-6 py-3 rounded-full btn-midnight-gradient font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
                 <span>Get started for free</span>
@@ -1436,7 +1436,7 @@ export default function GammaLandingPage() {
 
               <Link
                 href="/login"
-                className="w-full sm:w-auto px-6 py-3 rounded-full gamma-btn-secondary text-sm font-semibold transition-all"
+                className="w-full sm:w-auto px-6 py-3 rounded-full midnight-glass-interactive text-sm font-semibold text-[#F8FAFC] transition-all"
               >
                 Sign in to workspace
               </Link>
@@ -1445,40 +1445,40 @@ export default function GammaLandingPage() {
         </section>
       </main>
 
-      {/* ─── 8. Minimalist Gamma Footer ───────────────────────────────────────── */}
-      <footer className="w-full border-t border-border/80 bg-card py-10 px-4 sm:px-8 text-xs text-muted-foreground">
+      {/* ─── 8. Minimalist Midnight Footer ────────────────────────────────────── */}
+      <footer className="relative z-10 w-full border-t border-violet-500/15 bg-[#050711] py-10 px-4 sm:px-8 text-xs text-[#B7B5C8]">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-md gamma-gradient-primary text-white flex items-center justify-center font-bold text-[10px]">
-              Γ
+            <div className="w-6 h-6 rounded-md bg-gradient-to-tr from-[#7C3AED] to-[#EC4899] text-white flex items-center justify-center font-bold text-[10px]">
+              ✦
             </div>
-            <span className="font-bold text-foreground">SlideCraft AI</span>
+            <span className="font-bold text-[#F8FAFC]">SlideCraft AI</span>
             <span className="text-[11px] opacity-60">© {new Date().getFullYear()}</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-6">
-            <a href="#everything" className="hover:text-foreground transition-colors">
+            <a href="#everything" className="hover:text-white transition-colors">
               Formats
             </a>
-            <a href="#matrix" className="hover:text-foreground transition-colors">
+            <a href="#matrix" className="hover:text-white transition-colors">
               Capabilities
             </a>
-            <a href="#theming" className="hover:text-foreground transition-colors">
+            <a href="#theming" className="hover:text-white transition-colors">
               Themes
             </a>
-            <Link href="/dashboard" className="hover:text-foreground transition-colors">
+            <Link href="/dashboard" className="hover:text-white transition-colors">
               Workspace
             </Link>
             {isLoggedIn ? (
               <button
                 type="button"
                 onClick={() => signOut()}
-                className="hover:text-foreground text-rose-500 hover:underline transition-colors cursor-pointer"
+                className="hover:text-rose-400 text-rose-500 hover:underline transition-colors cursor-pointer"
               >
                 Sign Out
               </button>
             ) : (
-              <Link href="/login" className="hover:text-foreground transition-colors">
+              <Link href="/login" className="hover:text-white transition-colors">
                 Sign In
               </Link>
             )}

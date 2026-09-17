@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, RefreshCw, Check, Sparkles, Sliders, Palette, Layers } from "lucide-react";
 import { VisualDirection } from "@/types/visual-direction";
@@ -29,6 +29,23 @@ export const RegenerateBackgroundModal: React.FC<RegenerateBackgroundModalProps>
   const [reuseForFuture, setReuseForFuture] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  const generateCandidate = useCallback(() => {
+    setIsGenerating(true);
+    try {
+      const newVd = generateVisualDirection(
+        document.meta.title || "Professional Presentation",
+        {
+          seed: `manual-regen-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        }
+      );
+      setCandidate(newVd);
+    } catch (err) {
+      console.warn("Failed to generate candidate style:", err);
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [document.meta.title]);
+
   // Check if a preferred style was already saved
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -44,24 +61,7 @@ export const RegenerateBackgroundModal: React.FC<RegenerateBackgroundModalProps>
     if (isOpen) {
       generateCandidate();
     }
-  }, [isOpen]);
-
-  const generateCandidate = () => {
-    setIsGenerating(true);
-    try {
-      const newVd = generateVisualDirection(
-        document.meta.title || "Professional Presentation",
-        {
-          seed: `manual-regen-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        }
-      );
-      setCandidate(newVd);
-    } catch (err) {
-      console.warn("Failed to generate candidate style:", err);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+  }, [isOpen, generateCandidate]);
 
   const handleApplyStyle = () => {
     if (!candidate) return;

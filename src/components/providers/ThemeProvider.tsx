@@ -15,7 +15,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const THEME_STORAGE_KEY = "slidecraft_theme";
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<Theme>("light");
+  const [theme, setThemeState] = useState<Theme>("dark");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -28,14 +28,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return;
       }
 
-      // Check system preference
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      const initial: Theme = prefersDark ? "dark" : "light";
-      setThemeState(initial);
-      applyThemeClass(initial);
+      // Default to dark theme matching Midnight Violet design
+      setThemeState("dark");
+      applyThemeClass("dark");
     } catch {
-      // Fallback to light
-      applyThemeClass("light");
+      // Fallback to dark
+      applyThemeClass("dark");
     }
   }, []);
 

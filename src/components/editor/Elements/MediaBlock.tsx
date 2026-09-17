@@ -195,7 +195,7 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [element.id, isSvgPlaceholder, effectivePrompt, elementKey, slideId]);
+  }, [element.id, isSvgPlaceholder, effectivePrompt, elementKey, slideId, element.aspectRatio]);
 
   const handleRetry = () => {
     generatedUrlCache.delete(elementKey);

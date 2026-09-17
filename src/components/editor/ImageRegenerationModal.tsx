@@ -28,24 +28,8 @@ export const ImageRegenerationModal: React.FC<ImageRegenerationModalProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [customUrlInput, setCustomUrlInput] = useState("");
 
-  // Sync custom prompt when element changes
-  React.useEffect(() => {
-    if (element) {
-      setCustomPrompt(element.prompt || element.promptSummary || element.alt || "");
-      setCandidateUrl(null);
-    }
-  }, [element, isOpen]);
-
-  // Auto-generate candidate visual on open if no candidate is generated yet
-  React.useEffect(() => {
-    if (isOpen && element && !candidateUrl && !isGenerating) {
-      handleGenerateCandidate(element.prompt || element.promptSummary || element.alt);
-    }
-  }, [isOpen, element?.id]);
-
-  if (!isOpen || !element) return null;
-
-  const handleGenerateCandidate = async (variationPrompt?: string) => {
+  const handleGenerateCandidate = React.useCallback(async (variationPrompt?: string) => {
+    if (!element) return;
     setIsGenerating(true);
     setErrorMsg(null);
 
@@ -59,7 +43,7 @@ export const ImageRegenerationModal: React.FC<ImageRegenerationModalProps> = ({
           prompt: effectivePrompt,
           aspectRatio: element.aspectRatio || "16:9",
           quality: "standard",
-          projectId: document.id,
+          projectId: document?.id,
           format: "presentation",
         }),
       });
@@ -86,7 +70,24 @@ export const ImageRegenerationModal: React.FC<ImageRegenerationModalProps> = ({
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [element, customPrompt, document?.id]);
+
+  // Sync custom prompt when element changes
+  React.useEffect(() => {
+    if (element) {
+      setCustomPrompt(element.prompt || element.promptSummary || element.alt || "");
+      setCandidateUrl(null);
+    }
+  }, [element, isOpen]);
+
+  // Auto-generate candidate visual on open if no candidate is generated yet
+  React.useEffect(() => {
+    if (isOpen && element && !candidateUrl && !isGenerating) {
+      handleGenerateCandidate(element.prompt || element.promptSummary || element.alt);
+    }
+  }, [isOpen, element, candidateUrl, isGenerating, handleGenerateCandidate]);
+
+  if (!isOpen || !element) return null;
 
   const handleApplyImage = (urlToApply: string) => {
     const updatedPages = [...document.pages];

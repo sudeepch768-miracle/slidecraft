@@ -877,7 +877,7 @@ export default function GammaLandingPage() {
                     Sample Prompt
                   </span>
                   <p className="text-xs italic text-foreground leading-relaxed">
-                    "{activeDetailFormat.samplePrompt}"
+                    &quot;{activeDetailFormat.samplePrompt}&quot;
                   </p>
                 </div>
 

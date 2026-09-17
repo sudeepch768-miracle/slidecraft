@@ -22,10 +22,14 @@ import { OpenRouterService } from "../service/openrouter-provider";
 import { GeminiAiService } from "../service/gemini-provider";
 import { generateImage } from "../image-generation/nvidia-flux-provider";
 import { GenerateImageRequest, GenerateImageResult, GenerateImageError } from "../image-generation/types";
+import { executeMcpTool, SlideCraftMcpToolName } from "@/lib/mcp/client";
+import { McpToolResponse } from "../../../../server/mcp/types";
 
 // ─── Task Type Definitions ───────────────────────────────────────────────────
 
 export type AiTaskType =
+  // MCP Controlled Tool Execution
+  | "MCP_TOOL_EXECUTION"
   // Groq Responsibilities (Text & Content)
   | "TEXT_CONTENT"
   | "CONTENT_PLANNING"
@@ -76,6 +80,12 @@ export interface TaskRouteDefinition {
 }
 
 export const TASK_ROUTING_MATRIX: Record<AiTaskType, TaskRouteDefinition> = {
+  // 0. MCP Controlled Tool Execution
+  MCP_TOOL_EXECUTION: {
+    primaryProvider: "groq",
+    fallbackProvider: null,
+    allowedProviders: ["groq"],
+  },
   // 1. Text & Content tasks -> Groq (Fallback: OpenRouter free-only)
   TEXT_CONTENT: {
     primaryProvider: "groq",
@@ -670,6 +680,16 @@ export class AiTaskRouter {
         entry.fallbackProvider ? ` -> ${entry.fallbackProvider}` : ""
       } | Model: ${entry.modelUsed} | Duration: ${entry.durationMs}ms | Success: ${entry.success}`
     );
+  }
+
+  /**
+   * Dispatches an MCP tool execution through the controlled SlideCraft MCP layer.
+   */
+  public async executeMcpTool<T = any>(
+    toolName: SlideCraftMcpToolName,
+    args: Record<string, any>
+  ): Promise<McpToolResponse<T>> {
+    return executeMcpTool<T>(toolName, args);
   }
 }
 

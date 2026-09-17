@@ -711,7 +711,7 @@ export const PresentationPlanner: React.FC<PresentationPlannerProps> = ({
                 <span>Executive Thesis & Communication Goal</span>
               </div>
               <p className="text-base text-foreground font-medium leading-relaxed">
-                "{plan.keyMessage || plan.objective || plan.title}"
+                &quot;{plan.keyMessage || plan.objective || plan.title}&quot;
               </p>
             </div>
 

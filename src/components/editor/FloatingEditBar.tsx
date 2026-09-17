@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import { useEditorStore } from "@/store/editor-store";
@@ -182,7 +182,7 @@ export const FloatingEditBar: React.FC = () => {
                 </span>
               </div>
               <span className="text-[10px] text-muted-foreground italic truncate max-w-[240px]">
-                "{pendingDiff.instruction}"
+                &quot;{pendingDiff.instruction}&quot;
               </span>
             </div>
 

@@ -171,47 +171,58 @@ export async function GET() {
   // ─────────────────────────────────────────────────────────────────────────
   let geminiStatus: "available" | "invalid_key" | "invalid_model" | "rate_limited" | "not_configured" | "error" = "not_configured";
   let geminiError: string | null = null;
+  let geminiEffectiveModel = rawGeminiModel;
 
   if (!geminiKey) {
     geminiStatus = "not_configured";
     geminiError = "GEMINI_API_KEY is not configured in .env.local.";
   } else {
-    try {
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(rawGeminiModel)}:generateContent?key=${geminiKey}`;
-      const gRes = await fetch(geminiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: "ping" }] }],
-          generationConfig: { maxOutputTokens: 2 },
-        }),
-        signal: AbortSignal.timeout(6000),
-      });
+    const candidateGeminiModels = Array.from(new Set([
+      rawGeminiModel,
+      "gemini-3.5-flash-lite",
+      "gemini-flash-lite-latest",
+      "gemini-3.6-flash",
+    ]));
 
-      if (gRes.ok) {
-        geminiStatus = "available";
-        geminiError = null;
-      } else {
+    for (const testModel of candidateGeminiModels) {
+      try {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(testModel)}:generateContent?key=${geminiKey}`;
+        const gRes = await fetch(geminiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: "ping" }] }],
+            generationConfig: { maxOutputTokens: 2 },
+          }),
+          signal: AbortSignal.timeout(5000),
+        });
+
+        if (gRes.ok) {
+          geminiStatus = "available";
+          geminiError = null;
+          geminiEffectiveModel = testModel !== rawGeminiModel ? `${testModel} (auto-switched)` : testModel;
+          break;
+        }
+
         const errJson = await gRes.json().catch(() => ({}));
         const msg = errJson?.error?.message || gRes.statusText;
 
         if (gRes.status === 400 && msg.toLowerCase().includes("key")) {
           geminiStatus = "invalid_key";
           geminiError = "Invalid Gemini API key.";
-        } else if (gRes.status === 404) {
-          geminiStatus = "invalid_model";
-          geminiError = `Gemini model '${rawGeminiModel}' not found.`;
+          break;
         } else if (gRes.status === 429) {
           geminiStatus = "rate_limited";
           geminiError = "Gemini rate limit exceeded.";
+          break;
         } else {
           geminiStatus = "error";
           geminiError = `Gemini error: ${msg}`;
         }
+      } catch (err: any) {
+        geminiStatus = "error";
+        geminiError = `Failed to connect to Gemini (${testModel}): ${err.message}`;
       }
-    } catch (err: any) {
-      geminiStatus = "error";
-      geminiError = `Failed to connect to Gemini: ${err.message}`;
     }
   }
 
@@ -229,7 +240,7 @@ export async function GET() {
     architecture: "Strict Multi-Provider Decoupled Routing",
     activeTextProvider,
     activeImageProvider: nvidiaKey ? `NVIDIA FLUX (${nvidiaModel})` : "Not Configured",
-    activeReasoningProvider: geminiStatus === "available" ? `Gemini (${rawGeminiModel})` : "OpenRouter Free (Fallback)",
+    activeReasoningProvider: geminiStatus === "available" ? `Gemini (${geminiEffectiveModel})` : "OpenRouter Free (Fallback)",
     activeImplementationProvider: openRouterStatus === "available" ? `OpenRouter Free (${rawOpenRouterModel})` : "Gemini (Fallback)",
     providers: {
       groq: {
@@ -273,7 +284,7 @@ export async function GET() {
         name: "Google Gemini",
         role: "Complex Reasoning, QA Review & Orchestration",
         configuredModel: rawGeminiModel,
-        effectiveModel: rawGeminiModel,
+        effectiveModel: geminiEffectiveModel,
         status: geminiStatus,
         lastError: geminiError,
         isFreeOnly: false,

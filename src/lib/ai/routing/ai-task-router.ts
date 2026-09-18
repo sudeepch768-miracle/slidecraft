@@ -86,51 +86,51 @@ export const TASK_ROUTING_MATRIX: Record<AiTaskType, TaskRouteDefinition> = {
     fallbackProvider: null,
     allowedProviders: ["groq"],
   },
-  // 1. Text & Content tasks -> Groq (Fallback: OpenRouter free-only)
+  // 1. Text & Content tasks -> Groq (Fallback: Gemini, Tertiary: OpenRouter)
   TEXT_CONTENT: {
     primaryProvider: "groq",
-    fallbackProvider: "openrouter",
-    allowedProviders: ["groq", "openrouter"],
+    fallbackProvider: "gemini",
+    allowedProviders: ["groq", "gemini", "openrouter"],
   },
   CONTENT_PLANNING: {
     primaryProvider: "groq",
-    fallbackProvider: "openrouter",
-    allowedProviders: ["groq", "openrouter"],
+    fallbackProvider: "gemini",
+    allowedProviders: ["groq", "gemini", "openrouter"],
   },
   CONTENT_PLANNER: {
     primaryProvider: "groq",
-    fallbackProvider: "openrouter",
-    allowedProviders: ["groq", "openrouter"],
+    fallbackProvider: "gemini",
+    allowedProviders: ["groq", "gemini", "openrouter"],
   },
   STRUCTURED_JSON: {
     primaryProvider: "groq",
-    fallbackProvider: "openrouter",
-    allowedProviders: ["groq", "openrouter"],
+    fallbackProvider: "gemini",
+    allowedProviders: ["groq", "gemini", "openrouter"],
   },
   SLIDE_TEXT: {
     primaryProvider: "groq",
-    fallbackProvider: "openrouter",
-    allowedProviders: ["groq", "openrouter"],
+    fallbackProvider: "gemini",
+    allowedProviders: ["groq", "gemini", "openrouter"],
   },
   BULLETS: {
     primaryProvider: "groq",
-    fallbackProvider: "openrouter",
-    allowedProviders: ["groq", "openrouter"],
+    fallbackProvider: "gemini",
+    allowedProviders: ["groq", "gemini", "openrouter"],
   },
   SPEAKER_NOTES: {
     primaryProvider: "groq",
-    fallbackProvider: "openrouter",
-    allowedProviders: ["groq", "openrouter"],
+    fallbackProvider: "gemini",
+    allowedProviders: ["groq", "gemini", "openrouter"],
   },
   COPYWRITING: {
     primaryProvider: "groq",
-    fallbackProvider: "openrouter",
-    allowedProviders: ["groq", "openrouter"],
+    fallbackProvider: "gemini",
+    allowedProviders: ["groq", "gemini", "openrouter"],
   },
   OUTLINE: {
     primaryProvider: "groq",
-    fallbackProvider: "openrouter",
-    allowedProviders: ["groq", "openrouter"],
+    fallbackProvider: "gemini",
+    allowedProviders: ["groq", "gemini", "openrouter"],
   },
 
   // 2. Image tasks -> NVIDIA (No text fallback permitted)
@@ -521,6 +521,40 @@ export class AiTaskRouter {
             console.error(
               `[AiTaskRouter] Fallback provider '${fallbackProviderUsed}' also failed for task '${taskType}': ${fbErr.message}`
             );
+          }
+        }
+      }
+
+      // 5b. Attempt Tertiary Provider if available in allowedProviders
+      const remainingProviders = route.allowedProviders.filter(
+        (p) => p !== selectedProvider && p !== fallbackProviderUsed
+      );
+      for (const tertiary of remainingProviders) {
+        const tertiaryService = this.getProvider(tertiary);
+        if (tertiaryService.isConfigured() && this.canUseProvider(tertiary)) {
+          try {
+            console.log(
+              `[AiTaskRouter] Routing '${taskType}' to tertiary safety provider '${tertiary}'...`
+            );
+            const result = await this.executeWithConcurrencyLimit(tertiary, () =>
+              tertiaryService.chat(messages, options)
+            );
+            this.recordProviderSuccess(tertiary);
+            this.logAudit({
+              taskId,
+              taskType,
+              selectedProvider,
+              fallbackProvider: tertiary,
+              modelUsed: result.modelUsed,
+              durationMs: Date.now() - startTime,
+              success: true,
+              retryCount: retryCount + 1,
+              timestamp: new Date().toISOString(),
+            });
+            return result;
+          } catch (tertErr: any) {
+            this.recordProviderFailure(tertiary);
+            lastError = tertErr;
           }
         }
       }

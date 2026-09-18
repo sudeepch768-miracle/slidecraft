@@ -36,12 +36,14 @@ import { cn } from "@/lib/utils";
 
 interface PresentationPlannerProps {
   initialPlan: PresentationPlan;
+  onNewPresentation?: () => void;
 }
 
 const LOCAL_STORAGE_PLAN_KEY = "slidecraft_current_presentation_plan";
 
 export const PresentationPlanner: React.FC<PresentationPlannerProps> = ({
   initialPlan,
+  onNewPresentation,
 }) => {
   const router = useRouter();
 
@@ -73,6 +75,27 @@ export const PresentationPlanner: React.FC<PresentationPlannerProps> = ({
   // History for Undo / Redo
   const [history, setHistory] = useState<PresentationPlan[]>([normalizedInitial]);
   const [historyIndex, setHistoryIndex] = useState(0);
+
+  // Synchronize state when initialPlan changes (or when remounted with new key)
+  useEffect(() => {
+    setPlan(normalizedInitial);
+    setActiveSlideId(normalizedInitial.slidePlans[0]?.id || `slide-1`);
+    setHistory([normalizedInitial]);
+    setHistoryIndex(0);
+  }, [normalizedInitial]);
+
+  const handleStartNewPresentation = useCallback(() => {
+    try {
+      localStorage.removeItem(LOCAL_STORAGE_PLAN_KEY);
+    } catch {
+      // ignore
+    }
+    if (onNewPresentation) {
+      onNewPresentation();
+    } else {
+      router.push("/create/presentation");
+    }
+  }, [onNewPresentation, router]);
 
   // UI States
   const [isSaving, setIsSaving] = useState(false);
@@ -534,6 +557,7 @@ export const PresentationPlanner: React.FC<PresentationPlannerProps> = ({
         isRightPanelOpen={isRightPanelOpen}
         onApproveAndGenerate={handleApproveAndGenerate}
         isGenerating={isGenerating}
+        onNewPresentation={handleStartNewPresentation}
       />
 
       {/* 2. 5-Step Guided Navigation Tab Bar */}

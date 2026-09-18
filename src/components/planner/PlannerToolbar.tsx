@@ -32,6 +32,7 @@ interface PlannerToolbarProps {
   isRightPanelOpen: boolean;
   onApproveAndGenerate: () => void;
   isGenerating?: boolean;
+  onNewPresentation?: () => void;
 }
 
 export const PlannerToolbar: React.FC<PlannerToolbarProps> = ({
@@ -49,6 +50,7 @@ export const PlannerToolbar: React.FC<PlannerToolbarProps> = ({
   isRightPanelOpen,
   onApproveAndGenerate,
   isGenerating = false,
+  onNewPresentation,
 }) => {
   return (
     <header className="h-14 border-b border-border/80 bg-card/95 backdrop-blur-md px-4 md:px-6 flex items-center justify-between gap-4 select-none z-30 sticky top-0 shadow-sm">
@@ -62,6 +64,19 @@ export const PlannerToolbar: React.FC<PlannerToolbarProps> = ({
           <ArrowLeft className="w-4 h-4" />
           <span className="hidden sm:inline">Back</span>
         </Link>
+
+        {onNewPresentation && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onNewPresentation}
+            className="h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground gap-1.5"
+            title="Start a new presentation"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
+            <span className="hidden md:inline">New Presentation</span>
+          </Button>
+        )}
 
         <div className="h-4 w-px bg-border/80 mx-1 hidden sm:block" />
 

@@ -398,7 +398,7 @@ export class AiTaskRouter {
     fn: () => Promise<T>
   ): Promise<T> {
     const limit = this.concurrencyLimits[providerId];
-    
+
     // Simple polling wait if over limit
     let waitAttempts = 0;
     while (this.activeConcurrency[providerId] >= limit && waitAttempts < 40) {
@@ -710,8 +710,7 @@ export class AiTaskRouter {
       this.auditLogs.shift();
     }
     console.log(
-      `[AI Audit] [${entry.taskType}] Provider: ${entry.selectedProvider}${
-        entry.fallbackProvider ? ` -> ${entry.fallbackProvider}` : ""
+      `[AI Audit] [${entry.taskType}] Provider: ${entry.selectedProvider}${entry.fallbackProvider ? ` -> ${entry.fallbackProvider}` : ""
       } | Model: ${entry.modelUsed} | Duration: ${entry.durationMs}ms | Success: ${entry.success}`
     );
   }

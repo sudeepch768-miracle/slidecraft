@@ -152,8 +152,8 @@ export class GeminiAiService implements AiService {
     // Format system instruction if present
     const systemInstruction = systemMessages.length > 0
       ? {
-          parts: [{ text: systemMessages.map((m) => m.content).join("\n\n") }],
-        }
+        parts: [{ text: systemMessages.map((m) => m.content).join("\n\n") }],
+      }
       : undefined;
 
     // Convert messages into Gemini contents format

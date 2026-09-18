@@ -1,7 +1,7 @@
 import { aiTaskRouter, AiTaskType } from "./routing/ai-task-router";
 
-export const PRIMARY_GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
-export const FAST_GROQ_MODEL = "llama-3.1-8b-instant";
+export const PRIMARY_GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
+export const FAST_GROQ_MODEL = "openai/gpt-oss-20b";
 
 export interface GroqCompletionOptions {
   model?: string;

@@ -48,6 +48,10 @@ function EditorContent() {
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [isLoadingProject, setIsLoadingProject] = useState<boolean>(
+    Boolean(urlProjectId && projectId !== urlProjectId)
+  );
+
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitialMount = useRef(true);
 
@@ -56,15 +60,34 @@ function EditorContent() {
     if (typeof window !== "undefined") {
       (window as any).__editorStore = useEditorStore;
     }
-    if (!urlProjectId) return;
+    if (!urlProjectId) {
+      setIsLoadingProject(false);
+      return;
+    }
+
+    // Fast-path: if project is already primed in the store (e.g. from presentation planner), do not re-fetch
+    if (useEditorStore.getState().projectId === urlProjectId) {
+      setIsLoadingProject(false);
+      return;
+    }
 
     let isMounted = true;
+    setIsLoadingProject(true);
 
-    projectService.getProject(urlProjectId).then((proj) => {
-      if (isMounted && proj && proj.current_spec) {
-        initProject(proj);
-      }
-    });
+    projectService
+      .getProject(urlProjectId)
+      .then((proj) => {
+        if (isMounted) {
+          if (proj && proj.current_spec) {
+            initProject(proj);
+          }
+          setIsLoadingProject(false);
+        }
+      })
+      .catch((err) => {
+        console.warn("Failed to load project into studio:", err);
+        if (isMounted) setIsLoadingProject(false);
+      });
 
     return () => {
       isMounted = false;
@@ -76,6 +99,12 @@ function EditorContent() {
     // Avoid auto-saving on initial mount
     if (isInitialMount.current) {
       isInitialMount.current = false;
+      return;
+    }
+
+    // CRITICAL: NEVER auto-save if awaiting a specific target project load!
+    // Prevents an uninitialized empty document from overwriting the real presentation.
+    if ((urlProjectId && projectId !== urlProjectId) || isLoadingProject) {
       return;
     }
 
@@ -120,7 +149,7 @@ function EditorContent() {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [document, projectId, setProjectId, setSaveStatus, setLastSavedAt]);
+  }, [document, projectId, urlProjectId, isLoadingProject, setProjectId, setSaveStatus, setLastSavedAt]);
 
   // 3. Global Keyboard Undo / Redo Shortcuts (Ctrl+Z, Cmd+Z, Ctrl+Y, Cmd+Shift+Z)
   useEffect(() => {
@@ -222,6 +251,20 @@ function EditorContent() {
     }));
     setShowBrandKitModal(false);
   };
+
+  if (isLoadingProject) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-background text-foreground gap-4 select-none">
+        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 animate-pulse">
+          <Loader2 className="w-6 h-6 text-primary animate-spin" />
+        </div>
+        <div className="text-center space-y-1">
+          <h3 className="text-sm font-semibold">Loading Presentation Studio...</h3>
+          <p className="text-xs text-muted-foreground">Preparing your slides, themes, and interactive canvas</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-background">

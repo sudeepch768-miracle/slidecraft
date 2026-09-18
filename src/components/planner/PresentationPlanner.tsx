@@ -12,6 +12,7 @@ import { validatePresentationPlan } from "@/lib/ai/content-planner";
 import { compilePlanToDocumentSpec } from "@/lib/ai/plan-to-slides";
 import { generateVisualDirection, visualDirectionToThemeSpec } from "@/lib/ai/visual-direction-engine";
 import { projectService } from "@/lib/projects/project-service";
+import { useEditorStore } from "@/store/editor-store";
 import { PlannerToolbar } from "./PlannerToolbar";
 import { SlideOutlinePanel } from "./SlideOutlinePanel";
 import { SlideContentEditor } from "./SlideContentEditor";
@@ -483,28 +484,28 @@ export const PresentationPlanner: React.FC<PresentationPlannerProps> = ({
   const effectiveTheme = plan.visualDirection
     ? visualDirectionToThemeSpec(plan.visualDirection)
     : {
-        mode: "dark" as const,
-        colors: {
-          primary: "#38bdf8",
-          secondary: "#818cf8",
-          accent: "#f59e0b",
-          background: "#0A0F1D",
-          surface: "#131C31",
-          textPrimary: "#F8FAFC",
-          textSecondary: "#94A3B8",
-          border: "#1E2A44",
-        },
-        typography: {
-          headingFont: "Plus Jakarta Sans",
-          bodyFont: "Inter",
-          monoFont: "JetBrains Mono",
-          baseSizePx: 16,
-        },
-        styleTokens: {
-          borderRadiusPx: 14,
-          shadow: "lg" as const,
-        },
-      };
+      mode: "dark" as const,
+      colors: {
+        primary: "#38bdf8",
+        secondary: "#818cf8",
+        accent: "#f59e0b",
+        background: "#0A0F1D",
+        surface: "#131C31",
+        textPrimary: "#F8FAFC",
+        textSecondary: "#94A3B8",
+        border: "#1E2A44",
+      },
+      typography: {
+        headingFont: "Plus Jakarta Sans",
+        bodyFont: "Inter",
+        monoFont: "JetBrains Mono",
+        baseSizePx: 16,
+      },
+      styleTokens: {
+        borderRadiusPx: 14,
+        shadow: "lg" as const,
+      },
+    };
 
   // Primary Action: Approve Plan & Generate Presentation
   const handleApproveAndGenerate = async () => {
@@ -527,6 +528,21 @@ export const PresentationPlanner: React.FC<PresentationPlannerProps> = ({
         originalPrompt: plan.topic,
         currentSpec: documentSpec,
       });
+
+      // Synchronously prime the editor store in memory so /editor has it instantaneously
+      try {
+        useEditorStore.getState().initProject(newProject);
+      } catch (storeErr) {
+        console.warn("Could not pre-populate editor store in memory:", storeErr);
+      }
+
+      // Persist to sessionStorage and dedicated localStorage key for guaranteed tab recovery
+      try {
+        sessionStorage.setItem(`slidecraft_project_${newProject.id}`, JSON.stringify(newProject));
+        localStorage.setItem(`slidecraft_project_${newProject.id}`, JSON.stringify(newProject));
+      } catch (storageErr) {
+        console.warn("Could not write project to sessionStorage/localStorage:", storageErr);
+      }
 
       // 4. Clear active draft from local storage
       localStorage.removeItem(LOCAL_STORAGE_PLAN_KEY);
@@ -582,8 +598,8 @@ export const PresentationPlanner: React.FC<PresentationPlannerProps> = ({
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
                     : isCompleted
-                    ? "text-primary hover:bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                      ? "text-primary hover:bg-primary/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                 )}
               >
                 <span
@@ -592,8 +608,8 @@ export const PresentationPlanner: React.FC<PresentationPlannerProps> = ({
                     isActive
                       ? "bg-primary-foreground text-primary"
                       : isCompleted
-                      ? "bg-primary/20 text-primary"
-                      : "bg-muted text-muted-foreground"
+                        ? "bg-primary/20 text-primary"
+                        : "bg-muted text-muted-foreground"
                   )}
                 >
                   {isCompleted ? "✓" : item.step}

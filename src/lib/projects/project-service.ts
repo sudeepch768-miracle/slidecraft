@@ -165,16 +165,35 @@ export const projectService = {
   },
 
   /**
-   * Get a single project by ID (from cloud or local cache).
+   * Get a single project by ID (from cloud, session, or local cache).
    */
   async getProject(id: string): Promise<Project | null> {
-    // 1. If it's a locally generated ID, check local storage or starter projects directly
-    if (id.startsWith("local-") || id.startsWith("proj-")) {
-      const local = getStoredProjects().find((p) => p.id === id);
-      if (local) return local;
-      const starter = STARTER_PROJECTS.find((p) => p.id === id);
-      if (starter) return starter;
+    if (!id) return null;
+
+    // 0. Synchronous fast-path: check isolated session storage and dedicated local storage keys
+    if (typeof window !== "undefined") {
+      try {
+        const sessionRaw = sessionStorage.getItem(`slidecraft_project_${id}`);
+        if (sessionRaw) {
+          const parsed = JSON.parse(sessionRaw);
+          if (parsed && parsed.current_spec) return parsed;
+        }
+      } catch {}
+
+      try {
+        const localRaw = localStorage.getItem(`slidecraft_project_${id}`);
+        if (localRaw) {
+          const parsed = JSON.parse(localRaw);
+          if (parsed && parsed.current_spec) return parsed;
+        }
+      } catch {}
     }
+
+    // 1. Check local storage cache or starter projects directly
+    const local = getStoredProjects().find((p) => p.id === id);
+    if (local && local.current_spec) return local;
+    const starter = STARTER_PROJECTS.find((p) => p.id === id);
+    if (starter && starter.current_spec) return starter;
 
     // 2. Try fetching from cloud
     try {
@@ -182,15 +201,21 @@ export const projectService = {
       if (res.ok) {
         const data = await res.json();
         if (data.project) {
-          // Update in local storage cache
-          const local = getStoredProjects();
-          const existingIdx = local.findIndex((p) => p.id === id);
-          if (existingIdx >= 0) {
-            local[existingIdx] = data.project;
-          } else {
-            local.unshift(data.project);
+          // Update in isolated storage and local cache
+          if (typeof window !== "undefined") {
+            try {
+              sessionStorage.setItem(`slidecraft_project_${id}`, JSON.stringify(data.project));
+              localStorage.setItem(`slidecraft_project_${id}`, JSON.stringify(data.project));
+            } catch {}
           }
-          setStoredProjects(local);
+          const storedLocal = getStoredProjects();
+          const existingIdx = storedLocal.findIndex((p) => p.id === id);
+          if (existingIdx >= 0) {
+            storedLocal[existingIdx] = data.project;
+          } else {
+            storedLocal.unshift(data.project);
+          }
+          setStoredProjects(storedLocal);
           return data.project;
         }
       }
@@ -226,6 +251,13 @@ export const projectService = {
       if (res.ok) {
         const data = await res.json();
         if (data.project) {
+          if (typeof window !== "undefined") {
+            try {
+              sessionStorage.setItem(`slidecraft_project_${data.project.id}`, JSON.stringify(data.project));
+              localStorage.setItem(`slidecraft_project_${data.project.id}`, JSON.stringify(data.project));
+            } catch {}
+          }
+
           const local = getStoredProjects();
           local.unshift(data.project);
           setStoredProjects(local);
@@ -260,6 +292,13 @@ export const projectService = {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(`slidecraft_project_${newProject.id}`, JSON.stringify(newProject));
+        localStorage.setItem(`slidecraft_project_${newProject.id}`, JSON.stringify(newProject));
+      } catch {}
+    }
 
     const local = getStoredProjects();
     local.unshift(newProject);
@@ -303,6 +342,13 @@ export const projectService = {
       };
       local[existingIndex] = updatedProject;
       setStoredProjects(local);
+
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem(`slidecraft_project_${id}`, JSON.stringify(updatedProject));
+          localStorage.setItem(`slidecraft_project_${id}`, JSON.stringify(updatedProject));
+        } catch {}
+      }
     }
 
     // Record local version snapshot

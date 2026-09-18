@@ -1565,8 +1565,8 @@ function normalizeRawSlidePlan(
     (layoutSuggestion === "hero_title"
       ? "Full-bleed hero layout with high-contrast headline and subtle mesh background."
       : layoutSuggestion === "closing_slide"
-      ? "Impactful closing synthesis card with structured action checklist."
-      : `Balanced ${layoutSuggestion.replace(/_/g, " ")} layout with clean card framing.`);
+        ? "Impactful closing synthesis card with structured action checklist."
+        : `Balanced ${layoutSuggestion.replace(/_/g, " ")} layout with clean card framing.`);
 
   const imageSuggestion =
     raw.imageSuggestion || `High-resolution professional photography concept illustrating ${title}.`;
@@ -2057,15 +2057,15 @@ export async function executePlannerChatInstruction(
 Current Presentation Topic: "${plan.topic}"
 Current Slides:
 ${JSON.stringify(
-  plan.slidePlans.map((s, i) => ({
-    slideNumber: i + 1,
-    title: s.title,
-    purpose: s.purpose,
-    isLocked: s.isLocked,
-  })),
-  null,
-  2
-)}
+      plan.slidePlans.map((s, i) => ({
+        slideNumber: i + 1,
+        title: s.title,
+        purpose: s.purpose,
+        isLocked: s.isLocked,
+      })),
+      null,
+      2
+    )}
 
 USER INSTRUCTION: "${instruction}"
 

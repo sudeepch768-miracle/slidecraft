@@ -59,7 +59,30 @@ export function resolveEditScope(
     };
   }
 
-  // 2. Explicit Scope Override (if user manually locked scope in UI)
+  // 2. Check if instruction explicitly refers to a specific slide (e.g. "this slide", "slide 2")
+  const explicitSlideNumMatch = lower.match(/slide\s*#?\s*(\d+)/) || lower.match(/page\s*#?\s*(\d+)/);
+  const mentionsThisSlide =
+    lower.includes("this slide") ||
+    lower.includes("current slide") ||
+    lower.includes("this page") ||
+    lower.includes("on this slide") ||
+    Boolean(explicitSlideNumMatch);
+
+  if (mentionsThisSlide) {
+    const targetIdx = explicitSlideNumMatch
+      ? Math.max(0, Math.min(doc.pages.length - 1, parseInt(explicitSlideNumMatch[1], 10) - 1))
+      : activePageIndex;
+    return {
+      scope: {
+        type: "page",
+        targetName: `Slide ${targetIdx + 1}: ${doc.pages[targetIdx]?.title || "Untitled"}`,
+        pageIndex: targetIdx,
+        confidence: 1.0,
+      },
+    };
+  }
+
+  // 3. Explicit Scope Override (if user manually locked scope in UI)
   if (explicitScope !== "auto") {
     if (explicitScope === "document") {
       return {

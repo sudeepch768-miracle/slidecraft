@@ -75,7 +75,7 @@ export const ThemeSpecSchema = z.object({
   styleTokens: z.object({
     borderRadiusPx: z.number().default(10),
     shadow: z.enum(["none", "sm", "md", "lg"]).default("md"),
-  }),
+  }).optional().default({ borderRadiusPx: 10, shadow: "md" }),
 });
 export type ThemeSpec = z.infer<typeof ThemeSpecSchema>;
 

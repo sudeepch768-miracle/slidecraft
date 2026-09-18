@@ -7,6 +7,81 @@ import {
 } from "@/types/document-spec";
 import { PatchOperation, DesignAlternative } from "./editor-types";
 
+const VALID_ARCHETYPES = new Set<string>([
+  "hero_title",
+  "two_column_split",
+  "three_card_grid",
+  "four_metric_dashboard",
+  "horizontal_timeline",
+  "comparison_table",
+  "process_flowchart",
+  "infographic_radial",
+  "editorial_asymmetrical",
+  "resume_split_profile",
+  "data_chart_focus",
+  "letter_formal",
+  "title_and_content",
+  "two_column",
+  "three_column",
+  "full_bleed_visual",
+  "big_statistic",
+  "comparison",
+  "timeline",
+  "process_flow",
+  "diagram",
+  "chart",
+  "table",
+  "quote",
+  "section_divider",
+  "summary",
+  "closing_slide",
+  "college_event_poster",
+  "workshop_poster",
+  "seminar_poster",
+  "hackathon_poster",
+  "research_poster",
+  "project_exhibition_poster",
+  "product_promotion_poster",
+  "awareness_campaign_poster",
+  "social_announcement_poster",
+  "infographic_process",
+  "infographic_timeline",
+  "infographic_comparison",
+  "infographic_statistics",
+  "infographic_hierarchy",
+  "infographic_cause_effect",
+  "infographic_step_by_step",
+  "infographic_circular_workflow",
+  "social_instagram_post",
+  "social_instagram_story",
+  "social_linkedin_post",
+  "social_youtube_thumbnail",
+  "social_twitter_graphic",
+  "social_whatsapp_status",
+  "resume_ats_friendly",
+  "resume_academic_cv",
+  "resume_internship",
+  "resume_creative",
+  "resume_portfolio_profile",
+]);
+
+export function normalizeArchetype(raw?: string, fallback: LayoutArchetype = "two_column_split"): LayoutArchetype {
+  if (!raw) return fallback;
+  const clean = raw.toLowerCase().trim().replace(/[-\s]/g, "_");
+  if (VALID_ARCHETYPES.has(clean)) return clean as LayoutArchetype;
+
+  if (clean.includes("hero") || clean.includes("cover") || clean.includes("title")) return "hero_title";
+  if (clean.includes("split") || clean.includes("image") || clean.includes("visual")) return "two_column_split";
+  if (clean.includes("card") || clean.includes("pillar") || clean.includes("three")) return "three_card_grid";
+  if (clean.includes("metric") || clean.includes("kpi") || clean.includes("stat") || clean.includes("dashboard")) return "four_metric_dashboard";
+  if (clean.includes("timeline") || clean.includes("roadmap") || clean.includes("milestone")) return "horizontal_timeline";
+  if (clean.includes("table") || clean.includes("compare") || clean.includes("comparison")) return "comparison_table";
+  if (clean.includes("flow") || clean.includes("process") || clean.includes("step")) return "process_flowchart";
+  if (clean.includes("chart") || clean.includes("graph")) return "data_chart_focus";
+
+  return fallback;
+}
+
 /**
  * Applies a list of atomic patch operations to a DocumentSpec.
  * Every modification is surgical: untouched slides, elements, and metadata remain strictly intact.
@@ -130,17 +205,29 @@ export function executePatches(
             appliedSummary.push(`Slide ${patch.pageIndex + 1} is locked; preserved without modification`);
             break;
           }
-          page.archetype = patch.newArchetype;
-          if (patch.elements && patch.elements.length > 0) {
+          const validArchetype = normalizeArchetype(patch.newArchetype, page.archetype);
+          page.archetype = validArchetype;
+
+          if (patch.elements && Array.isArray(patch.elements) && patch.elements.length > 0) {
             // AI sometimes returns elements as JSON strings — parse them defensively
-            page.elements = patch.elements.map((el: any) => {
+            const newElements = patch.elements.map((el: any) => {
               if (typeof el === "string") {
                 try { return JSON.parse(el); } catch { return null; }
               }
               return el;
             }).filter(Boolean) as ContentElement[];
+
+            if (newElements.length > 0) {
+              // Ensure we retain any existing title / subtitle elements if the new elements omitted them
+              const hasTitle = newElements.some((e: any) => e.type === "text" && (e.variant === "h1" || e.variant === "h2"));
+              const existingTitleEl = page.elements.find((e: any) => e.type === "text" && (e.variant === "h1" || e.variant === "h2"));
+              if (!hasTitle && existingTitleEl) {
+                newElements.unshift(existingTitleEl);
+              }
+              page.elements = newElements;
+            }
           }
-          appliedSummary.push(`Changed slide ${patch.pageIndex + 1} layout archetype to '${patch.newArchetype}'`);
+          appliedSummary.push(`Changed slide ${patch.pageIndex + 1} layout archetype to '${validArchetype}'`);
         }
         break;
       }

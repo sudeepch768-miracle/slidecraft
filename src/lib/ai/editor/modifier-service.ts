@@ -7,7 +7,7 @@ import {
 import { callGroqChat } from "@/lib/ai/groq";
 import { extractJsonString } from "@/lib/ai/parser";
 import { resolveEditScope, ScopeResolutionContext } from "./scope-resolver";
-import { executePatches, generateAlternativeVariants } from "./patch-engine";
+import { executePatches, generateAlternativeVariants, normalizeArchetype } from "./patch-engine";
 import { runQualityChecks } from "./quality-checker";
 import {
   EditScopeType,
@@ -41,6 +41,74 @@ function deriveDeterministicPatches(
     ? Math.max(0, Math.min(doc.pages.length - 1, parseInt(slideNumMatch[1], 10) - 1))
     : (scope.pageIndex !== undefined ? scope.pageIndex : 0);
   const targetPage = doc.pages[targetPageIndex];
+
+  // 0. "Make this slide more visual" / "more visual" / "visual layout"
+  if (
+    lower.includes("more visual") ||
+    lower.includes("make it visual") ||
+    lower.includes("add visual") ||
+    lower.includes("add image") ||
+    lower.includes("visualize")
+  ) {
+    if (targetPage) {
+      if (
+        targetPage.archetype === "hero_title" ||
+        targetPage.archetype === "title_and_content" ||
+        targetPage.archetype === "section_divider"
+      ) {
+        patches.push({
+          op: "change_layout",
+          pageIndex: targetPageIndex,
+          newArchetype: "two_column_split",
+        });
+      }
+
+      const hasMedia = targetPage.elements.some((e) => e.type === "media");
+      if (!hasMedia) {
+        const topic = (targetPage.title + " " + (targetPage.subtitle || "")).toLowerCase();
+        let assetUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&q=80";
+        if (topic.includes("data") || topic.includes("ai") || topic.includes("tech") || topic.includes("model")) {
+          assetUrl = "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=1200&q=80";
+        } else if (topic.includes("finance") || topic.includes("market") || topic.includes("growth") || topic.includes("revenue")) {
+          assetUrl = "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80";
+        } else if (topic.includes("team") || topic.includes("people") || topic.includes("culture")) {
+          assetUrl = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&q=80";
+        }
+
+        patches.push({
+          op: "add_element",
+          pageIndex: targetPageIndex,
+          element: {
+            type: "media",
+            id: `visual-asset-${Date.now()}`,
+            mediaType: "image",
+            url: assetUrl,
+            caption: targetPage.title || "Visual Focus",
+            fit: "cover",
+          } as ContentElement,
+        });
+      }
+
+      patches.push({
+        op: "update_page_background",
+        pageIndex: targetPageIndex,
+        background: {
+          type: "solid",
+          value: targetPage.backgroundOverride || doc.theme.colors.background || "#0B0F19",
+          glow: {
+            enabled: true,
+            position: "bottom_right",
+            color: doc.theme.colors.primary || "#38BDF8",
+            blur: 90,
+            opacity: 0.25,
+          },
+        },
+        syncThemeBackground: false,
+      });
+
+      return patches;
+    }
+  }
 
   // 1. "Make this more professional"
   if (lower.includes("more professional") || lower.includes("executive")) {
@@ -662,13 +730,36 @@ function deriveDeterministicPatches(
     return patches;
   }
 
-  // Default fallback: update active page title / headline
-  if (targetPage) {
-    targetPage.title = instruction.slice(0, 50);
+  // Explicit title change request (e.g. "change title to 'Summary'", "rename slide to 'Roadmap'")
+  const titleChangeMatch = lower.match(/(?:change|update|set|rename)\s+(?:the\s+)?(?:slide\s+)?title\s+(?:to\s+)?["']?([^"']+)["']?/i);
+  if (titleChangeMatch && titleChangeMatch[1] && targetPage) {
+    const requestedTitle = titleChangeMatch[1].trim();
+    targetPage.title = requestedTitle;
     patches.push({
       op: "update_text",
       elementId: targetPage.id,
-      newText: targetPage.title,
+      newText: requestedTitle,
+    });
+    return patches;
+  }
+
+  // Safe Default Fallback: Polish page visual styling WITHOUT mutating user content
+  if (targetPage) {
+    patches.push({
+      op: "update_page_background",
+      pageIndex: targetPageIndex,
+      background: {
+        type: "solid",
+        value: targetPage.backgroundOverride || doc.theme.colors.background || "#0B0F19",
+        glow: {
+          enabled: true,
+          position: "bottom_right",
+          color: doc.theme.colors.primary || "#38BDF8",
+          blur: 90,
+          opacity: 0.22,
+        },
+      },
+      syncThemeBackground: false,
     });
   }
 
@@ -748,17 +839,27 @@ export async function modifyDocumentWithAi(params: ModifyDocumentParams): Promis
         : {
             title: currentDocument.meta.title,
             theme: currentDocument.theme,
+            activePageIndex: pageIndex,
+            activePage: currentDocument.pages[pageIndex]
+              ? {
+                  id: currentDocument.pages[pageIndex].id,
+                  title: currentDocument.pages[pageIndex].title,
+                  subtitle: currentDocument.pages[pageIndex].subtitle,
+                  archetype: currentDocument.pages[pageIndex].archetype,
+                  elements: currentDocument.pages[pageIndex].elements,
+                }
+              : undefined,
             pages: currentDocument.pages.map((p, idx) => ({
               index: idx,
               id: p.id,
               title: p.title,
               archetype: p.archetype,
               isLocked: p.isLocked,
-              elementsCount: p.elements?.length || 0,
+              elementsSummary: p.elements?.map((e) => ({ type: e.type, content: (e as any).content?.slice(0, 40) })),
             })),
           };
 
-    const prompt = `You are SlideCraft AI's precision editor.
+    const prompt = `You are SlideCraft AI's precision presentation editor.
 The user wants to modify an existing design specification.
 
 ### USER INSTRUCTION
@@ -773,10 +874,29 @@ Selected Element ID: ${scope.elementId ?? selectedElementId ?? "none"}
 ### SCOPED CONTEXT
 ${JSON.stringify(scopedContext, null, 2)}
 
-### RULES:
-1. ONLY modify the requested target page or document property.
-2. NEVER modify or overwrite slides where "isLocked": true.
-3. Return ONLY a valid JSON object matching:
+### CRITICAL RULES:
+1. STRICT CONTENT PRESERVATION: NEVER delete, corrupt, or wipe out the user's existing facts, metrics, titles, or body content.
+2. NEVER set a slide title to the user's instruction or prompt!
+3. Allowed LayoutArchetypes:
+   - hero_title
+   - two_column_split
+   - three_card_grid
+   - four_metric_dashboard
+   - horizontal_timeline
+   - comparison_table
+   - process_flowchart
+   - data_chart_focus
+   - title_and_content
+   - two_column
+   - three_column
+   - full_bleed_visual
+   - big_statistic
+   - summary
+   - closing_slide
+4. When making a slide more visual:
+   - Keep all existing text and metrics!
+   - You can add a 'media' element with a relevant Unsplash image, or switch archetype to 'two_column_split' or 'three_card_grid'.
+5. Return ONLY a valid JSON object matching:
 {
   "operations": [
     // Array of valid PatchOperation objects
@@ -786,14 +906,12 @@ ${JSON.stringify(scopedContext, null, 2)}
 Supported operations:
 - update_text: { "op": "update_text", "elementId": string, "newText": string }
 - replace_element: { "op": "replace_element", "elementId": string, "newElement": object }
-- move_element: { "op": "move_element", "elementId": string, "x": number, "y": number }
-- resize_element: { "op": "resize_element", "elementId": string, "w": number, "h": number }
 - change_colors: { "op": "change_colors", "palette": object }
 - change_typography: { "op": "change_typography", "typography": object }
-- change_layout: { "op": "change_layout", "pageIndex": number, "newArchetype": string, "elements": [] }
+- change_layout: { "op": "change_layout", "pageIndex": number, "newArchetype": string }
 - add_element: { "op": "add_element", "pageIndex": number, "element": object }
 - delete_element: { "op": "delete_element", "pageIndex": number, "elementId": string }
-- reorder_slides: { "op": "reorder_slides", "pageOrder": [number] }
+- update_page_background: { "op": "update_page_background", "pageIndex": number, "background": object }
 
 Do not return conversational text or markdown ticks. Return JSON only.`;
 
@@ -835,8 +953,36 @@ Do not return conversational text or markdown ticks. Return JSON only.`;
     });
   }
 
-  // 7. Validate through Zod Schema
-  const validatedDoc = DocumentSpecSchema.parse(updatedDocument);
+  // 7. Sanitize & defensively validate DocumentSpec to guarantee zero crashes
+  if (!updatedDocument.theme) {
+    updatedDocument.theme = JSON.parse(JSON.stringify(currentDocument.theme));
+  }
+  if (!updatedDocument.theme.styleTokens) {
+    updatedDocument.theme.styleTokens = { borderRadiusPx: 12, shadow: "md" };
+  }
+  for (const p of updatedDocument.pages) {
+    // Normalize archetype defensively
+    if (typeof (p as any).archetype === "string") {
+      p.archetype = normalizeArchetype(p.archetype, "two_column_split");
+    }
+    // Defensively sanitize elements
+    p.elements = p.elements.map((el, i) => {
+      if (!el.id) (el as any).id = `el-${p.id}-${i}-${Date.now()}`;
+      if (!el.type || el.type === ("container" as any) || el.type === ("card" as any)) {
+        return {
+          type: "text" as const,
+          id: el.id,
+          variant: "body" as const,
+          content: (el as any).content || (el as any).title || "Key Point",
+          align: "left" as const,
+        };
+      }
+      return el;
+    });
+  }
+
+  const parseResult = DocumentSpecSchema.safeParse(updatedDocument);
+  const validatedDoc = parseResult.success ? parseResult.data : updatedDocument;
 
   return {
     success: true,

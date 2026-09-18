@@ -22,6 +22,7 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isProtectedPath =
+    pathname === "/" ||
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/settings") ||
     pathname.startsWith("/create") ||
@@ -35,10 +36,11 @@ export async function updateSession(request: NextRequest) {
   // Check if any chunk of the auth cookie or local session cookie exists
   const hasSession = request.cookies.getAll().some(
     (c) =>
-      c.name === AUTH_COOKIE_NAME ||
-      c.name.startsWith(AUTH_COOKIE_NAME + ".") ||
-      c.name === "slidecraft_session" ||
-      c.name === "slidecraft_auth"
+      (c.name === AUTH_COOKIE_NAME ||
+        c.name.startsWith(AUTH_COOKIE_NAME + ".") ||
+        c.name === "slidecraft_session" ||
+        c.name === "slidecraft_auth") &&
+      Boolean(c.value && c.value.trim() !== "")
   );
 
   if (!hasSession && isProtectedPath) {

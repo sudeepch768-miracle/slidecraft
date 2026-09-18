@@ -61,7 +61,13 @@ export default function LoginPage() {
 
   const setSessionCookie = () => {
     if (typeof document !== "undefined") {
-      document.cookie = "slidecraft_session=active; path=/; max-age=604800; SameSite=Lax";
+      if (rememberMe) {
+        // Persistent cookie across browser restarts (7 days)
+        document.cookie = "slidecraft_session=active; path=/; max-age=604800; SameSite=Lax";
+      } else {
+        // Ephemeral session cookie (cleared when browser session ends)
+        document.cookie = "slidecraft_session=active; path=/; SameSite=Lax";
+      }
     }
   };
 

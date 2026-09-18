@@ -308,17 +308,23 @@ const THEME_PREVIEWS = [
 
 export default function GammaLandingPage() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const [hasSessionCookie, setHasSessionCookie] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
   React.useEffect(() => {
-    if (typeof document !== "undefined") {
-      setHasSessionCookie(
-        document.cookie.includes("slidecraft_session=active") ||
-        document.cookie.includes("slidecraft_auth=")
-      );
+    const hasCookie =
+      typeof document !== "undefined" &&
+      (document.cookie.includes("slidecraft_session=active") ||
+        document.cookie.includes("slidecraft_auth=") ||
+        document.cookie.includes("sb-"));
+    setHasSessionCookie(hasCookie);
+    setAuthChecked(true);
+
+    if (!loading && !user && !hasCookie) {
+      router.replace("/login");
     }
-  }, [user]);
+  }, [user, loading, router]);
 
   const isLoggedIn = !!user || hasSessionCookie;
   const [composerTab, setComposerTab] = useState<"generate" | "paste" | "import">("generate");
@@ -358,6 +364,24 @@ export default function GammaLandingPage() {
       router.push(`${fmtObj.path}?prompt=${encodeURIComponent(finalPrompt)}`);
     }
   };
+
+  // Auth Guard: Never render landing page until session verification is complete and valid
+  if (loading || !authChecked || !isLoggedIn) {
+    return (
+      <div className="dark min-h-screen w-screen flex flex-col items-center justify-center bg-[#070914] text-[#F8FAFC]">
+        <MidnightVioletBackground />
+        <div className="relative z-10 flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#7C3AED] via-[#9333EA] to-[#EC4899] text-white flex items-center justify-center shadow-lg shadow-purple-500/30 animate-pulse">
+            <Sparkles className="w-6 h-6 fill-white text-white" />
+          </div>
+          <div className="flex items-center gap-2 text-xs text-violet-300 font-medium">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-pink-400" />
+            <span>Verifying SlideCraft session...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dark relative min-h-screen w-screen flex flex-col bg-[#070914] text-[#F8FAFC] selection:bg-pink-500/30 selection:text-pink-300 overflow-x-hidden font-sans">
@@ -445,9 +469,10 @@ export default function GammaLandingPage() {
                 <button
                   type="button"
                   onClick={() => signOut()}
-                  className="inline-flex items-center px-3.5 py-1.5 rounded-full midnight-glass-interactive hover:bg-rose-500/15 hover:border-rose-500/40 text-[#A7A9BC] hover:text-white text-xs font-semibold transition-all active:scale-95 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full midnight-glass-interactive hover:bg-rose-500/15 hover:border-rose-500/40 text-[#A7A9BC] hover:text-white text-xs font-semibold transition-all active:scale-95 cursor-pointer"
                   title="Log out of SlideCraft"
                 >
+                  <LogOut className="w-3.5 h-3.5 text-rose-400" />
                   <span>Log out</span>
                 </button>
               </div>

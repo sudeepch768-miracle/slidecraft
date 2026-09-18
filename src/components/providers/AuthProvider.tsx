@@ -80,6 +80,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (typeof document !== "undefined") {
         document.cookie = "slidecraft_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
         document.cookie = "slidecraft_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+        // Also ensure any split supabase cookies are cleared
+        document.cookie.split(";").forEach((c) => {
+          const eqPos = c.indexOf("=");
+          const name = eqPos > -1 ? c.substring(0, eqPos).trim() : c.trim();
+          if (name.startsWith("sb-") || name.startsWith("slidecraft_")) {
+            document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+          }
+        });
       }
       if (typeof sessionStorage !== "undefined") {
         sessionStorage.removeItem("slidecraft_lamp_on");

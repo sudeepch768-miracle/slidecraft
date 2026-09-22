@@ -18,11 +18,12 @@ import { projectService } from "../src/lib/projects/project-service";
 import { DocumentSpec, ContentElement } from "../src/types/document-spec";
 
 const OUT_DIR = path.resolve("d:/ppt generator/output/persistence");
-const ARTIFACTS_DIR = path.resolve(
-  "C:/Users/sudee/.gemini/antigravity/brain/e87583d0-c603-436a-aa28-4c63442f4d78"
-);
+const ARTIFACTS_DIR = process.env.ARTIFACTS_DIR
+  ? path.resolve(process.env.ARTIFACTS_DIR)
+  : path.resolve("d:/ppt generator/output/artifacts");
 
 fs.mkdirSync(OUT_DIR, { recursive: true });
+fs.mkdirSync(ARTIFACTS_DIR, { recursive: true });
 
 async function runCustomizationPersistenceTest() {
   console.log("===============================================================");

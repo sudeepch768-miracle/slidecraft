@@ -63,15 +63,19 @@ export function synthesizeDynamicDesignSystem(
   const hash = hashString(input.prompt);
 
   // 1. Detect Domain & Visual Aesthetic Signals
-  const isLuxury = /\b(luxury|skincare|cosmetics|beauty|spa|couture|prestige|perfume|elegance|fashion|jewelry|gold|champagne|bespoke)\b/.test(text);
+  const isLuxury = /\b(luxury|skincare|cosmetics|beauty|spa|couture|prestige|perfume|elegance|fashion|jewelry|champagne|bespoke)\b/.test(text);
+  const isBlackAndGold = /\b(black and gold|private wealth|family office|gold portfolio)\b/.test(text) || (isLuxury && /\bgold\b/.test(text));
   const isCyberpunkOrGaming = /\b(cyberpunk|neon|gaming|esports|synthwave|hacker|terminal|matrix|arcade|futuristic|sci-fi|glitch|virtual|techno)\b/.test(text);
   const isAcademicOrResearch = /\b(academic|research|paper|study|university|thesis|quantum|scientific|water cycle|physics|chemistry|biology|biology|history|peer-reviewed)\b/.test(text);
-  const isChildrenOrPlayful = /\b(children|kids|playful|kindergarten|planets|story|fun|cartoon|preschool|elementary|nursery|toy|game)\b/.test(text);
+  const isChildrenOrPlayful = /\b(children|kids|playful|kindergarten|planets|cartoon|preschool|elementary|nursery|toy|game)\b/.test(text);
   const isDarkStartupOrInvestor = /\b(startup|investor|pitch|deck|seed|series a|series b|venture|arr|growth|metrics|saas|ai platform)\b/.test(text) && /\b(dark|black|obsidian|stealth)\b/.test(text);
+  const isCorporateFinance = /\b(finance|banking|quarterly earnings|investment return|annual revenue|equity|hedge fund|capital)\b/.test(text);
+  const isCreativeOrBrand = /\b(creative design|brand marketing|portfolio|art studio|graphic design|creative agency|campaign showcase)\b/.test(text);
+  const isEditorialOrMagazine = /\b(editorial|magazine|journalism|publication|curated culture|article)\b/.test(text);
   const isStartupGeneral = /\b(startup|pitch|deck|venture|seed|growth|saas|fintech)\b/.test(text);
   const isFestivalOrEvent = /\b(festival|concert|music|carnival|fiesta|party|celebration|announcement|summer|live)\b/.test(text);
   const isExecutiveOrLegal = /\b(letter|formal|business letter|memo|agreement|proposal|contract|official|corporate executive)\b/.test(text);
-  const isResume = docType === "resume" || /\b(resume|cv|curriculum vitae|bio|portfolio)\b/.test(text);
+  const isResume = docType === "resume" || /\b(resume|cv|curriculum vitae|bio)\b/.test(text);
   const isMinimal = /\b(minimal|minimalist|clean|simple|understated|neutral|monochrome)\b/.test(text);
 
   // 2. Synthesize Palette & Mood
@@ -100,7 +104,29 @@ export function synthesizeDynamicDesignSystem(
 
   // ── Aesthetic Profiles ───────────────────────────────────────────────────
 
-  if (isLuxury) {
+  if (isBlackAndGold) {
+    name = "Luxury Black & Gold Wealth Portfolio";
+    visualDirection = "High-end obsidian backdrop, polished metallic gold typography, and prestigious family office framing";
+    background = "#0C0A09";
+    surface = "#1C1917";
+    primary = "#D4AF37";   // Metallic Gold
+    secondary = "#C5A059"; // Champagne Gold
+    accent = "#F59E0B";    // Warm Amber
+    textPrimary = "#FAF5EF";
+    mutedText = "#A8A29E";
+    border = "#292524";
+    headingFont = "Playfair Display";
+    bodyFont = "Source Sans Pro";
+    monoFont = "JetBrains Mono";
+    cornerRadius = 4;
+    borderWidth = 1;
+    shadowStyle = "elevated";
+    alignment = "center";
+    density = "airy";
+    hierarchy = "dramatic_editorial_headline";
+    grid = "asymmetrical_editorial";
+    imageTreatment = "editorial_clean";
+  } else if (isLuxury) {
     name = "Luxury Skincare & Editorial Prestige";
     visualDirection = "Soft warm beige tones, deep charcoal serif typography, and elegant editorial framing";
     background = "#FBF8F3"; // Soft creamy warm beige
@@ -276,6 +302,72 @@ export function synthesizeDynamicDesignSystem(
     hierarchy = "formal_document_header";
     grid = "single_column_prose";
     imageTreatment = "editorial_clean";
+  } else if (isEditorialOrMagazine) {
+    name = "Curated Editorial & Design Journal";
+    visualDirection = "Authoritative editorial serif, curated warm ink palette, classic print publication framing";
+    background = "#FDFBF7";
+    surface = "#FFFFFF";
+    primary = "#1C1917";   // Deep warm ink
+    secondary = "#DC2626"; // Crimson
+    accent = "#78716C";    // Warm graphite
+    textPrimary = "#1C1917";
+    mutedText = "#57534E";
+    border = "#E7E5E4";
+    headingFont = "Playfair Display";
+    bodyFont = "Source Sans Pro";
+    monoFont = "Courier Prime";
+    cornerRadius = 0;
+    borderWidth = 1;
+    shadowStyle = "none";
+    alignment = "left";
+    density = "airy";
+    hierarchy = "formal_document_header";
+    grid = "single_column_prose";
+    imageTreatment = "editorial_clean";
+  } else if (isCorporateFinance) {
+    name = "Corporate Financial & Investment";
+    visualDirection = "Refined institutional navy, prestige gold accents, authoritative serif headers";
+    background = "#F7F4EF";
+    surface = "#FFFFFF";
+    primary = "#0A2342";   // Corporate Navy
+    secondary = "#C9A84C"; // Gold
+    accent = "#1B4F8A";
+    textPrimary = "#0A2342";
+    mutedText = "#5A6473";
+    border = "#D5C9B0";
+    headingFont = "Playfair Display";
+    bodyFont = "Source Sans Pro";
+    monoFont = "Courier Prime";
+    cornerRadius = 4;
+    borderWidth = 1;
+    shadowStyle = "subtle";
+    alignment = "left";
+    density = "balanced";
+    hierarchy = "balanced_title_body";
+    grid = "standard_columns";
+    imageTreatment = "editorial_clean";
+  } else if (isCreativeOrBrand) {
+    name = "Artistic Creative Portfolio";
+    visualDirection = "High-energy expressive magenta, vibrant purple accents, modern typographic flair";
+    background = "#FEFEFE";
+    surface = "#FFFFFF";
+    primary = "#E91E8C";   // Studio Magenta
+    secondary = "#7C3AED"; // Violet
+    accent = "#F59E0B";
+    textPrimary = "#1A1A2E";
+    mutedText = "#6B7280";
+    border = "#F3E8FF";
+    headingFont = "Raleway";
+    bodyFont = "Poppins";
+    monoFont = "JetBrains Mono";
+    cornerRadius = 16;
+    borderWidth = 1;
+    shadowStyle = "elevated";
+    alignment = "left";
+    density = "airy";
+    hierarchy = "balanced_title_body";
+    grid = "standard_columns";
+    imageTreatment = "high_contrast";
   } else if (docType === "social_media" || input.platform?.includes("instagram")) {
     name = "High-Engagement Social Feed Graphic";
     visualDirection = "Vibrant attention-commanding contrast, bold focal typography, and mobile-optimized framing";

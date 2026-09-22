@@ -122,7 +122,10 @@ async function runAiEngineVerificationTests() {
   // TEST SUITE 1: Pluggable AI Service Abstraction
   console.log("\n--- SUITE 1: Pluggable AI Service Abstraction & Security ---");
   const defaultService = getAiService();
-  assert(defaultService.providerName === "groq", "Default AI provider is Groq");
+  assert(
+    defaultService.providerName === "groq" || defaultService.providerName.includes("fallback-chain"),
+    "Default AI provider is Groq or chained fallback"
+  );
   assert(typeof defaultService.chat === "function", "AI service exposes chat interface");
   assert(typeof defaultService.isConfigured === "function", "AI service provides isConfigured check");
 

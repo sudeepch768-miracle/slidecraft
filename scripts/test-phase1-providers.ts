@@ -128,8 +128,9 @@ async function runPhase1Verification() {
 
   const diag = chain.getDiagnostics();
   assert(
-    diag.chainOrder[0] === "Groq (Primary)" &&
-      diag.chainOrder[1] === "OpenRouter (Free Tier Fallback)",
+    diag.chainOrder[0].startsWith("Groq") &&
+      diag.chainOrder[1].includes("Gemini") &&
+      diag.chainOrder[2].startsWith("OpenRouter"),
     `Hierarchy order is strictly verified: ${diag.chainOrder.join(" → ")}`
   );
   assert(

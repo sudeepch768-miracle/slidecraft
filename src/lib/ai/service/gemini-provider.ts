@@ -42,9 +42,8 @@ export class GeminiAiService implements AiService {
     const configured = this.defaultModel;
     const candidates = [
       configured,
-      "gemini-3.5-flash-lite",
-      "gemini-flash-lite-latest",
       "gemini-3.6-flash",
+      "gemini-3.5-flash-lite",
       "gemma-4-26b-a4b-it",
     ];
     // Deduplicate
@@ -143,7 +142,7 @@ export class GeminiAiService implements AiService {
       : this.modelCascade;
 
     const startTime = Date.now();
-    const timeoutMs = options.timeoutMs || 45000;
+    const timeoutMs = options.timeoutMs || 15000;
 
     // Separate system messages from conversation turns
     const systemMessages = messages.filter((m) => m.role === "system");

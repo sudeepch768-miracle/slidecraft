@@ -22,17 +22,37 @@
 
 import fs from "fs";
 import path from "path";
+
+// Load .env.local
+const envPath = path.resolve("d:/ppt generator", ".env.local");
+if (fs.existsSync(envPath)) {
+  for (const line of fs.readFileSync(envPath, "utf-8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx > 0) {
+      const key = trimmed.slice(0, eqIdx).trim();
+      let val = trimmed.slice(eqIdx + 1).trim();
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        val = val.slice(1, -1);
+      }
+      process.env[key] = val;
+    }
+  }
+}
+
 import { execSync } from "child_process";
 import { executeGenerationPipeline } from "../src/lib/ai/generation-pipeline";
 import { compileDocumentToPptx } from "../src/lib/compiler/pptx/pptx-builder";
 import { validateBeforeExport } from "../src/lib/compiler/pptx/pre-export-validator";
 
 const OUT_BASE = path.resolve("d:/ppt generator/output/responsiveness");
-const ARTIFACTS_DIR = path.resolve(
-  "C:/Users/sudee/.gemini/antigravity/brain/e87583d0-c603-436a-aa28-4c63442f4d78"
-);
+const ARTIFACTS_DIR = process.env.ARTIFACTS_DIR
+  ? path.resolve(process.env.ARTIFACTS_DIR)
+  : path.resolve("d:/ppt generator/output/artifacts");
 
 fs.mkdirSync(OUT_BASE, { recursive: true });
+fs.mkdirSync(ARTIFACTS_DIR, { recursive: true });
 
 interface PromptTestCase {
   id: string;

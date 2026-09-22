@@ -83,8 +83,8 @@ async function runTests() {
   for (const t of groqTasks) {
     const route = TASK_ROUTING_MATRIX[t];
     assert(
-      route?.primaryProvider === "groq" && route?.fallbackProvider === "openrouter",
-      `Task '${t}' routes primary=groq, fallback=openrouter`
+      route?.primaryProvider === "groq" && route?.fallbackProvider === "gemini",
+      `Task '${t}' routes primary=groq, fallback=gemini`
     );
   }
 

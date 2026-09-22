@@ -198,6 +198,25 @@ function deriveDeterministicPatches(
 
   // 5. Dedicated Decoupled Background modifications (Strictly preserves elements)
   if (lower.includes("background") || lower.includes("bg")) {
+    if (lower.includes("blue") || lower.includes("navy")) {
+      patches.push({
+        op: "update_page_background",
+        pageIndex: targetPageIndex,
+        background: {
+          type: "solid",
+          value: "#0A192F",
+          glow: {
+            enabled: true,
+            position: "bottom_right",
+            color: "#0284C7",
+            blur: 80,
+            opacity: 0.2,
+          },
+        },
+        syncThemeBackground: true,
+      });
+      return patches;
+    }
     if (lower.includes("dark") || lower.includes("black") || lower.includes("obsidian")) {
       patches.push({
         op: "update_page_background",
@@ -245,25 +264,6 @@ function deriveDeterministicPatches(
           },
         },
         syncThemeBackground: false,
-      });
-      return patches;
-    }
-    if (lower.includes("blue") || lower.includes("navy")) {
-      patches.push({
-        op: "update_page_background",
-        pageIndex: targetPageIndex,
-        background: {
-          type: "solid",
-          value: "#0A192F",
-          glow: {
-            enabled: true,
-            position: "bottom_right",
-            color: "#0284C7",
-            blur: 80,
-            opacity: 0.2,
-          },
-        },
-        syncThemeBackground: true,
       });
       return patches;
     }

@@ -34,6 +34,24 @@ export function buildPosterDocumentSpec(config: PosterConfig): DocumentSpec {
   const mood = config.designMood || categoryMeta.defaultMood;
   const formatPreset = resolveFormatPreset("poster", mood);
   const theme = presetToThemeSpec(formatPreset);
+
+  if (mood && POSTER_MOOD_PALETTES[mood]) {
+    theme.colors = {
+      ...theme.colors,
+      ...POSTER_MOOD_PALETTES[mood],
+    };
+    if (mood === "dark_cyberpunk") {
+      theme.mode = "dark";
+    }
+  }
+
+  if (config.typographyStyle && POSTER_TYPOGRAPHY_STYLES[config.typographyStyle]) {
+    theme.typography = {
+      ...theme.typography,
+      ...POSTER_TYPOGRAPHY_STYLES[config.typographyStyle],
+    };
+  }
+
   const background = presetToPageBackground(formatPreset);
   const visualDirection = presetToVisualDirection(formatPreset, config.title);
 

@@ -178,7 +178,7 @@ export const projectService = {
           const parsed = JSON.parse(sessionRaw);
           if (parsed && parsed.current_spec) return parsed;
         }
-      } catch {}
+      } catch { }
 
       try {
         const localRaw = localStorage.getItem(`slidecraft_project_${id}`);
@@ -186,7 +186,7 @@ export const projectService = {
           const parsed = JSON.parse(localRaw);
           if (parsed && parsed.current_spec) return parsed;
         }
-      } catch {}
+      } catch { }
     }
 
     // 1. Check local storage cache or starter projects directly
@@ -206,7 +206,7 @@ export const projectService = {
             try {
               sessionStorage.setItem(`slidecraft_project_${id}`, JSON.stringify(data.project));
               localStorage.setItem(`slidecraft_project_${id}`, JSON.stringify(data.project));
-            } catch {}
+            } catch { }
           }
           const storedLocal = getStoredProjects();
           const existingIdx = storedLocal.findIndex((p) => p.id === id);
@@ -255,7 +255,7 @@ export const projectService = {
             try {
               sessionStorage.setItem(`slidecraft_project_${data.project.id}`, JSON.stringify(data.project));
               localStorage.setItem(`slidecraft_project_${data.project.id}`, JSON.stringify(data.project));
-            } catch {}
+            } catch { }
           }
 
           const local = getStoredProjects();
@@ -297,7 +297,7 @@ export const projectService = {
       try {
         sessionStorage.setItem(`slidecraft_project_${newProject.id}`, JSON.stringify(newProject));
         localStorage.setItem(`slidecraft_project_${newProject.id}`, JSON.stringify(newProject));
-      } catch {}
+      } catch { }
     }
 
     const local = getStoredProjects();
@@ -347,7 +347,7 @@ export const projectService = {
         try {
           sessionStorage.setItem(`slidecraft_project_${id}`, JSON.stringify(updatedProject));
           localStorage.setItem(`slidecraft_project_${id}`, JSON.stringify(updatedProject));
-        } catch {}
+        } catch { }
       }
     }
 

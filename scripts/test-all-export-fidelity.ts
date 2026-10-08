@@ -9,7 +9,7 @@ async function main() {
   console.log("===============================================================\n");
 
   const sampleSvg =
-    "data:image/svg+xml;utf8," +
+    "data:image/svg+xml;charset=utf-8," +
     encodeURIComponent(
       `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450" fill="none">` +
         `<rect width="800" height="450" rx="16" fill="#0B0B1E"/>` +

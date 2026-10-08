@@ -108,10 +108,21 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({
   const elementKey = element.id || `${slideId}-${effectivePrompt?.slice(0, 30)}`;
 
   const cachedUrl = generatedUrlCache.get(elementKey);
-  const src = localSrc || cachedUrl || element.src || element.url;
+  const rawSrc = localSrc || cachedUrl || element.src || element.url;
+  const src = rawSrc
+    ? rawSrc.startsWith("data:image/svg+xml;utf8,")
+      ? rawSrc.replace("data:image/svg+xml;utf8,", "data:image/svg+xml;charset=utf-8,")
+      : rawSrc
+    : null;
   const fit = element.fit || "cover";
   const hasOverlay = element.overlayColor && (element.overlayOpacity ?? 0) > 0;
   const isSvgPlaceholder = !src || src.startsWith("data:image/svg+xml");
+
+  const [imageLoadError, setImageLoadError] = useState(false);
+
+  useEffect(() => {
+    setImageLoadError(false);
+  }, [src]);
 
   // Keep livePos synced with element.position when not dragging/resizing
   useEffect(() => {
@@ -691,24 +702,55 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({
           borderRadius: element.borderRadius ? `${element.borderRadius}px` : "12px",
         }}
       >
-        {/* Error State */}
-        {generationError ? (
-          <div className="w-full h-full min-h-[180px] flex flex-col items-center justify-center gap-2.5 p-4 text-center rounded-xl bg-destructive/10 border border-destructive/20 select-none">
-            <AlertCircle className="w-6 h-6 text-destructive shrink-0" />
-            <div>
-              <p className="text-xs font-bold text-foreground">Generation Error</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5 max-w-xs">{generationError}</p>
-            </div>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleRetry();
+        {/* Error or Broken Image State */}
+        {generationError || imageLoadError ? (
+          <div
+            className="w-full h-full min-h-[180px] flex flex-col items-center justify-center gap-2.5 p-4 text-center rounded-xl border select-none"
+            style={{
+              backgroundColor: theme.colors.surface,
+              borderColor: `${theme.colors.border}80`,
+            }}
+          >
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner"
+              style={{
+                backgroundColor: `${theme.colors.secondary}15`,
+                color: theme.colors.secondary,
               }}
-              className="mt-1 px-3 py-1 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg text-xs font-semibold transition-colors shadow-sm"
             >
-              Retry Generation
-            </button>
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold" style={{ color: theme.colors.textPrimary }}>
+                {generationError ? "Generation Error" : "Visual Illustration"}
+              </p>
+              <p className="text-[11px] mt-0.5 max-w-xs line-clamp-2" style={{ color: theme.colors.textSecondary }}>
+                {generationError || element.promptSummary || element.alt || "Click below to generate or customize this image"}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRetry();
+                }}
+                className="px-3 py-1 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg text-xs font-semibold transition-colors shadow-sm flex items-center gap-1.5"
+              >
+                <RefreshCw className="w-3 h-3" />
+                Generate Image
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
+                className="px-3 py-1 border border-border hover:bg-muted text-foreground rounded-lg text-xs font-semibold transition-colors"
+              >
+                Upload File
+              </button>
+            </div>
           </div>
         ) : src ? (
           <div className="relative w-full h-full pointer-events-none">
@@ -719,6 +761,7 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({
               style={{ width: "100%", height: "100%", objectFit }}
               loading="lazy"
               draggable={false}
+              onError={() => setImageLoadError(true)}
               className={cn(
                 "w-full h-full select-none transition-opacity duration-300",
                 isAutoGenerating && isSvgPlaceholder ? "opacity-40 filter blur-[1px]" : "opacity-100"
@@ -738,7 +781,7 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({
             )}
 
             {/* Caption */}
-            {element.caption && !isAutoGenerating && !isPromptLike(element.caption) && (
+            {element.caption && !isAutoGenerating && !isSvgPlaceholder && !isPromptLike(element.caption) && (
               <div
                 className="absolute bottom-0 left-0 right-0 px-2.5 py-1 text-[11px] font-medium backdrop-blur-xs"
                 style={{

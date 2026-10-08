@@ -538,18 +538,19 @@ function compileSlideElements(
     const secondaryColor = visualDirection?.colors.secondary || theme.colors.secondary;
     const bgColor = visualDirection?.colors.background || theme.colors.background;
 
+    const cleanSlideId = String(slideId).replace(/[^a-zA-Z0-9_-]/g, "_");
     const svgFallback =
-      "data:image/svg+xml;utf8," +
+      "data:image/svg+xml;charset=utf-8," +
       encodeURIComponent(
         `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500" fill="none">` +
           `<rect width="800" height="500" rx="16" fill="${bgColor}"/>` +
           `<defs>` +
-          `<linearGradient id="vg_${slideId}" x1="0%" y1="0%" x2="100%" y2="100%">` +
+          `<linearGradient id="vg_${cleanSlideId}" x1="0%" y1="0%" x2="100%" y2="100%">` +
           `<stop offset="0%" stop-color="${primaryColor}" stop-opacity="0.35"/>` +
           `<stop offset="100%" stop-color="${secondaryColor}" stop-opacity="0.12"/>` +
           `</linearGradient>` +
           `</defs>` +
-          `<rect width="800" height="500" rx="16" fill="url(#vg_${slideId})"/>` +
+          `<rect width="800" height="500" rx="16" fill="url(#vg_${cleanSlideId})"/>` +
           `<circle cx="400" cy="250" r="140" stroke="${primaryColor}" stroke-opacity="0.3" stroke-width="2" stroke-dasharray="6 6"/>` +
           `<circle cx="400" cy="250" r="70" stroke="${secondaryColor}" stroke-opacity="0.5" stroke-width="2"/>` +
           `<circle cx="400" cy="250" r="12" fill="${primaryColor}" fill-opacity="0.8"/>` +
@@ -809,18 +810,19 @@ function compileSlideElements(
     const secondaryColor = visualDirection?.colors.secondary || theme.colors.secondary;
     const bgColor = visualDirection?.colors.background || theme.colors.background;
 
+    const cleanSlideId = String(slideId).replace(/[^a-zA-Z0-9_-]/g, "_");
     const svgFallback =
-      "data:image/svg+xml;utf8," +
+      "data:image/svg+xml;charset=utf-8," +
       encodeURIComponent(
         `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450" fill="none">` +
           `<rect width="800" height="450" rx="16" fill="${bgColor}"/>` +
           `<defs>` +
-          `<linearGradient id="vg_${slideId}" x1="0%" y1="0%" x2="100%" y2="100%">` +
+          `<linearGradient id="vg_${cleanSlideId}" x1="0%" y1="0%" x2="100%" y2="100%">` +
           `<stop offset="0%" stop-color="${primaryColor}" stop-opacity="0.35"/>` +
           `<stop offset="100%" stop-color="${secondaryColor}" stop-opacity="0.12"/>` +
           `</linearGradient>` +
           `</defs>` +
-          `<rect width="800" height="450" rx="16" fill="url(#vg_${slideId})"/>` +
+          `<rect width="800" height="450" rx="16" fill="url(#vg_${cleanSlideId})"/>` +
           `<circle cx="400" cy="225" r="140" stroke="${primaryColor}" stroke-opacity="0.3" stroke-width="2" stroke-dasharray="6 6"/>` +
           `<circle cx="400" cy="225" r="70" stroke="${secondaryColor}" stroke-opacity="0.5" stroke-width="2"/>` +
           `<circle cx="400" cy="225" r="12" fill="${primaryColor}" fill-opacity="0.8"/>` +

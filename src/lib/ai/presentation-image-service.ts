@@ -188,7 +188,7 @@ function createProceduralVisualFallback(
 
   // Clean, elegant geometric SVG placeholder data URI
   const svgDataUri =
-    "data:image/svg+xml;utf8," +
+    "data:image/svg+xml;charset=utf-8," +
     encodeURIComponent(
       `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="576" viewBox="0 0 1024 576" fill="none">` +
         `<rect width="1024" height="576" fill="${bg}"/>` +

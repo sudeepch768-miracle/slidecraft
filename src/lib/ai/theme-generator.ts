@@ -355,3 +355,43 @@ export function detectContentDensity(text: string): "light" | "balanced" | "dens
   if (hasDetailKeywords || wordCount > 200) return "dense";
   return "balanced";
 }
+
+/**
+ * Randomizes a theme specification according to the domain/tone of the given prompt.
+ * Selects among theme-congruent presets with controlled color variation.
+ */
+export function getRandomThemeForPrompt(
+  promptText: string,
+  seed?: string
+): ThemeSpec {
+  const lower = promptText.toLowerCase();
+  const detectedDomain = detectPromptDomain(promptText);
+
+  // Score all presets against prompt
+  const scored = THEME_PRESETS.map((preset) => {
+    let score = 0;
+    if (detectedDomain !== "general" && preset.domains.includes(detectedDomain)) {
+      score += 8;
+    }
+    for (const kw of preset.keywords) {
+      if (lower.includes(kw)) score += 3;
+    }
+    return { preset, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  const maxScore = scored[0]?.score || 0;
+
+  let candidates = scored.filter((s) => s.score >= Math.max(1, maxScore * 0.5)).map((s) => s.preset);
+  if (candidates.length === 0) {
+    candidates = [...THEME_PRESETS];
+  }
+
+  // Randomly pick one among the qualifying theme presets
+  const chosenIndex = Math.floor(Math.random() * candidates.length);
+  const chosen = candidates[chosenIndex];
+
+  // Return a clone of the theme
+  return JSON.parse(JSON.stringify(chosen.theme));
+}
+

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { EditorState, EditorTool } from "@/types/editor";
+import { EditorState, EditorTool, ThemeHistoryEntry } from "@/types/editor";
 import {
   DocumentSpec,
   ContentElement,
@@ -9,6 +9,10 @@ import {
 } from "@/types/document-spec";
 import { generateId } from "@/lib/utils";
 import { analyzeQuality, repairAndAnalyze } from "@/lib/quality/quality-engine";
+import {
+  generatePromptThemedBackground,
+  applyVisualDirectionToDocument,
+} from "@/lib/ai/visual-direction-engine";
 
 const MAX_HISTORY = 30;
 
@@ -42,6 +46,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   canUndo: false,
   canRedo: false,
 
+  themeHistory: [],
+  themeHistoryIndex: -1,
+  canUndoTheme: false,
+  canRedoTheme: false,
+
   projectId: null,
   designSystem: null,
   saveStatus: "saved",
@@ -54,6 +63,16 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     } catch {
       // ignore
     }
+    const initialThemeEntry: ThemeHistoryEntry = {
+      theme: project.current_spec.theme,
+      visualDirection: project.current_spec.visualDirection,
+      pageBackgrounds: project.current_spec.pages.map((p) => ({
+        pageId: p.id,
+        backgroundSpec: p.backgroundSpec,
+        backgroundOverride: p.backgroundOverride,
+      })),
+    };
+
     set({
       document: project.current_spec,
       projectId: project.id,
@@ -62,6 +81,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       selectedElementId: null,
       history: [project.current_spec],
       historyIndex: 0,
+      themeHistory: [initialThemeEntry],
+      themeHistoryIndex: 0,
+      canUndoTheme: false,
+      canRedoTheme: false,
       canUndo: false,
       canRedo: false,
       saveStatus: "saved",
@@ -251,6 +274,40 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ selectedElementId: null });
   },
 
+  bringElementForward: (elementId) => {
+    const { document, activePageIndex, setDocument } = get();
+    const pages = [...document.pages];
+    const page = pages[activePageIndex];
+    if (!page) return;
+
+    const idx = page.elements.findIndex((el) => el.id === elementId);
+    if (idx === -1 || idx >= page.elements.length - 1) return;
+
+    const updated = [...page.elements];
+    const [item] = updated.splice(idx, 1);
+    updated.push(item);
+
+    pages[activePageIndex] = { ...page, elements: updated };
+    setDocument({ ...document, pages });
+  },
+
+  sendElementBackward: (elementId) => {
+    const { document, activePageIndex, setDocument } = get();
+    const pages = [...document.pages];
+    const page = pages[activePageIndex];
+    if (!page) return;
+
+    const idx = page.elements.findIndex((el) => el.id === elementId);
+    if (idx <= 0) return;
+
+    const updated = [...page.elements];
+    const [item] = updated.splice(idx, 1);
+    updated.unshift(item);
+
+    pages[activePageIndex] = { ...page, elements: updated };
+    setDocument({ ...document, pages });
+  },
+
   addPage: (archetype = "two_column_split") => {
     const { document, setDocument } = get();
     const newPageNum = document.pages.length + 1;
@@ -301,6 +358,129 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const renumbered = pages.map((p, i) => ({ ...p, pageNumber: i + 1 }));
     setDocument({ ...document, pages: renumbered });
     set({ activePageIndex: toIndex });
+  },
+
+  randomizeThemeBackground: (promptText?: string) => {
+    const { document, setDocument, themeHistory, themeHistoryIndex } = get();
+    const topic = promptText || document.meta?.title || document.meta?.description || "Presentation";
+
+    // Snapshot current theme state into history if history is empty
+    const currentEntry: ThemeHistoryEntry = {
+      theme: document.theme,
+      visualDirection: document.visualDirection,
+      pageBackgrounds: document.pages.map((p) => ({
+        pageId: p.id,
+        backgroundSpec: p.backgroundSpec,
+        backgroundOverride: p.backgroundOverride,
+      })),
+    };
+
+    const baseHistory =
+      themeHistory.length > 0 && themeHistoryIndex >= 0
+        ? themeHistory.slice(0, themeHistoryIndex + 1)
+        : [currentEntry];
+
+    // Generate fresh randomized prompt-congruent VisualDirection
+    const newVd = generatePromptThemedBackground(topic);
+
+    // Apply to document with slide-level contextual backgrounds
+    const updatedDoc = applyVisualDirectionToDocument(document, newVd);
+
+    // Record new entry in theme history
+    const newEntry: ThemeHistoryEntry = {
+      theme: updatedDoc.theme,
+      visualDirection: updatedDoc.visualDirection,
+      pageBackgrounds: updatedDoc.pages.map((p) => ({
+        pageId: p.id,
+        backgroundSpec: p.backgroundSpec,
+        backgroundOverride: p.backgroundOverride,
+      })),
+    };
+
+    const newThemeHistory = [...baseHistory, newEntry];
+    if (newThemeHistory.length > 25) newThemeHistory.shift();
+    const newIdx = newThemeHistory.length - 1;
+
+    set({
+      themeHistory: newThemeHistory,
+      themeHistoryIndex: newIdx,
+      canUndoTheme: newIdx > 0,
+      canRedoTheme: false,
+    });
+
+    setDocument(updatedDoc);
+  },
+
+  previousThemeBackground: () => {
+    const { document, setDocument, themeHistory, themeHistoryIndex } = get();
+    if (themeHistoryIndex > 0) {
+      const prevIdx = themeHistoryIndex - 1;
+      const prevEntry = themeHistory[prevIdx];
+
+      const bgMap = new Map(prevEntry.pageBackgrounds.map((b) => [b.pageId, b]));
+      const updatedPages = document.pages.map((page) => {
+        const bgInfo = bgMap.get(page.id);
+        if (bgInfo) {
+          return {
+            ...page,
+            backgroundSpec: bgInfo.backgroundSpec,
+            backgroundOverride: bgInfo.backgroundOverride,
+          };
+        }
+        return page;
+      });
+
+      const updatedDoc: DocumentSpec = {
+        ...document,
+        theme: prevEntry.theme,
+        visualDirection: prevEntry.visualDirection,
+        pages: updatedPages,
+      };
+
+      set({
+        themeHistoryIndex: prevIdx,
+        canUndoTheme: prevIdx > 0,
+        canRedoTheme: true,
+      });
+
+      setDocument(updatedDoc);
+    }
+  },
+
+  nextThemeBackground: () => {
+    const { document, setDocument, themeHistory, themeHistoryIndex } = get();
+    if (themeHistoryIndex < themeHistory.length - 1) {
+      const nextIdx = themeHistoryIndex + 1;
+      const nextEntry = themeHistory[nextIdx];
+
+      const bgMap = new Map(nextEntry.pageBackgrounds.map((b) => [b.pageId, b]));
+      const updatedPages = document.pages.map((page) => {
+        const bgInfo = bgMap.get(page.id);
+        if (bgInfo) {
+          return {
+            ...page,
+            backgroundSpec: bgInfo.backgroundSpec,
+            backgroundOverride: bgInfo.backgroundOverride,
+          };
+        }
+        return page;
+      });
+
+      const updatedDoc: DocumentSpec = {
+        ...document,
+        theme: nextEntry.theme,
+        visualDirection: nextEntry.visualDirection,
+        pages: updatedPages,
+      };
+
+      set({
+        themeHistoryIndex: nextIdx,
+        canUndoTheme: true,
+        canRedoTheme: nextIdx < themeHistory.length - 1,
+      });
+
+      setDocument(updatedDoc);
+    }
   },
 
   undo: () => {

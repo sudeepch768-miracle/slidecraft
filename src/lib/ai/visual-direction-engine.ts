@@ -7,7 +7,7 @@ import {
   TexturePatternType,
   RecentStyleMetadata,
 } from "@/types/visual-direction";
-import { ThemeSpec, BackgroundSpec, LayoutArchetype } from "@/types/document-spec";
+import { ThemeSpec, BackgroundSpec, LayoutArchetype, DocumentSpec } from "@/types/document-spec";
 import crypto from "crypto";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -569,7 +569,137 @@ const STYLE_FAMILIES: StyleFamilyBlueprint[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 6. Select Style Family with Recent History Avoidance
+// 5.1 Domain Clusters for Thematic Grouping & Variation
+// ─────────────────────────────────────────────────────────────────────────────
+interface DomainCluster {
+  name: string;
+  keywords: string[];
+  families: VisualStyleFamily[];
+}
+
+const DOMAIN_CLUSTERS: DomainCluster[] = [
+  {
+    name: "technology_ai",
+    keywords: [
+      "ai", "software", "tech", "cloud", "code", "cyber", "machine learning", "data", "algorithm",
+      "network", "quantum", "robotics", "devops", "platform", "saas", "crypto", "blockchain",
+      "deep tech", "automation", "api", "microservice", "infrastructure", "backend", "frontend",
+      "neural", "autonomous", "agent", "deep learning", "architecture", "models", "llm"
+    ],
+    families: [
+      "deep_navy_electric_blue",
+      "indigo_violet_gradient",
+      "subtle_geometric_grid",
+      "dark_aurora_gradient",
+      "teal_emerald_technology",
+    ],
+  },
+  {
+    name: "finance_business",
+    keywords: [
+      "finance", "banking", "investment", "investor", "revenue", "profit", "capital", "venture",
+      "market", "sales", "growth", "business", "corporate", "executive", "strategy", "roadmap",
+      "quarterly", "annual", "b2b", "enterprise", "fintech", "equity", "fund", "valuation",
+      "hedge", "portfolio", "macroeconomic", "performance", "economy", "economic", "asset",
+      "trading", "wealth", "treasury", "finances", "financial", "fiscal", "q1", "q2", "q3", "q4"
+    ],
+    families: [
+      "midnight_blue_coral",
+      "charcoal_amber_highlights",
+      "clean_light_blue_pro",
+      "deep_navy_electric_blue",
+    ],
+  },
+  {
+    name: "healthcare_medical",
+    keywords: [
+      "health", "medical", "patient", "clinical", "hospital", "pharma", "doctor", "wellness",
+      "therapy", "biology", "biotech", "care", "medicine", "nurse", "surgery", "diagnostic", "clinic",
+      "oncology", "cancer", "biomarker", "trial", "trials", "pharmaceutical", "therapeutics", "genetics", "pathology"
+    ],
+    families: [
+      "clean_light_blue_pro",
+      "minimal_white_light_blue",
+      "teal_emerald_technology",
+      "deep_navy_electric_blue",
+    ],
+  },
+  {
+    name: "nature_environment",
+    keywords: [
+      "nature", "environment", "climate", "green", "sustainability", "energy", "solar", "carbon",
+      "eco", "agriculture", "forest", "wildlife", "conservation", "renewable", "earth", "ocean",
+      "agroforestry", "sequestration", "regenerative", "biodiversity", "ecology", "carbon offset", "esg", "clean energy"
+    ],
+    families: [
+      "green_environmental",
+      "teal_emerald_technology",
+      "clean_light_blue_pro",
+      "warm_editorial",
+      "charcoal_amber_highlights",
+    ],
+  },
+  {
+    name: "academic_research",
+    keywords: [
+      "research", "academic", "university", "paper", "study", "science", "education", "student",
+      "thesis", "history", "philosophy", "analysis", "humanities", "professor", "college", "school"
+    ],
+    families: [
+      "blue_lavender_editorial",
+      "warm_editorial",
+      "clean_light_blue_pro",
+      "indigo_violet_gradient",
+      "minimal_white_light_blue",
+    ],
+  },
+  {
+    name: "creative_design",
+    keywords: [
+      "creative", "design", "art", "brand", "marketing", "agency", "portfolio", "media", "story",
+      "music", "culture", "fashion", "film", "studio", "aesthetic", "graphic", "advertising"
+    ],
+    families: [
+      "soft_abstract_mesh",
+      "warm_editorial",
+      "purple_creative",
+      "indigo_violet_gradient",
+      "charcoal_amber_highlights",
+      "red_orange_energetic",
+    ],
+  },
+  {
+    name: "luxury_premium",
+    keywords: [
+      "luxury", "gold", "prestige", "vip", "wealth", "high-end", "real estate", "hospitality",
+      "hotel", "bespoke", "jewelry", "fashion", "premium", "private equity",
+      "horlogerie", "timepiece", "timepieces", "watch", "watches", "exhibition", "couture", "haute", "gem", "diamond"
+    ],
+    families: [
+      "charcoal_amber_highlights",
+      "midnight_blue_coral",
+      "high_contrast_monochrome",
+      "warm_editorial",
+    ],
+  },
+  {
+    name: "high_energy_event",
+    keywords: [
+      "hackathon", "event", "fest", "summit", "conference", "competition", "tournament",
+      "sprint", "esports", "gaming", "launch", "festival", "showcase"
+    ],
+    families: [
+      "red_orange_energetic",
+      "subtle_geometric_grid",
+      "dark_aurora_gradient",
+      "soft_abstract_mesh",
+      "indigo_violet_gradient",
+    ],
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. Select Style Family with Prompt-Aware Randomized Sampling & History Avoidance
 // ─────────────────────────────────────────────────────────────────────────────
 export function selectStyleFamily(
   seed: string,
@@ -585,26 +715,74 @@ export function selectStyleFamily(
   const prng = createPrng(seed);
   const lowerTopic = topic.toLowerCase();
 
-  // 1. Gather recently used families (last 3) to prevent consecutive repetition
-  const recentlyUsed = new Set(recentHistory.slice(0, 3).map((r) => r.styleFamily));
+  // 1. Gather recently used families (last 2) to prevent immediate duplicate back-to-back
+  const recentlyUsed = new Set(recentHistory.slice(0, 2).map((r) => r.styleFamily));
 
-  // 2. Score families by topic keywords
-  const scored = STYLE_FAMILIES.map((fam) => {
+  // 2. Score families by direct keywords AND thematic domain clusters
+  const familyScores = new Map<VisualStyleFamily, number>();
+  for (const fam of STYLE_FAMILIES) {
     let score = 0;
+
+    // Direct family keywords (strong match)
     fam.keywords.forEach((kw) => {
-      if (lowerTopic.includes(kw)) score += 5;
+      if (lowerTopic.includes(kw)) score += 8;
     });
-    // Penalize recently used
-    if (recentlyUsed.has(fam.family)) {
-      score -= 20;
+
+    // Domain cluster affinity: count all keyword hits for proportional domain weight
+    for (const cluster of DOMAIN_CLUSTERS) {
+      if (cluster.families.includes(fam.family)) {
+        let clusterHits = 0;
+        for (const kw of cluster.keywords) {
+          if (lowerTopic.includes(kw)) {
+            clusterHits++;
+          }
+        }
+        score += clusterHits * 6;
+      }
     }
-    // Add controlled pseudo-random jitter from seed
-    score += prng() * 4;
-    return { fam, score };
+
+    familyScores.set(fam.family, score);
+  }
+
+  // 3. Find top scoring families
+  let maxScore = 0;
+  for (const score of familyScores.values()) {
+    if (score > maxScore) maxScore = score;
+  }
+
+  // 4. Candidate pool: if topic matched keywords, take high-affinity families (score >= maxScore * 0.7)
+  // If no match (generic prompt), all families are candidates
+  let candidateBlueprints: StyleFamilyBlueprint[] = [];
+
+  if (maxScore > 0) {
+    const threshold = Math.max(4, maxScore * 0.7);
+    candidateBlueprints = STYLE_FAMILIES.filter((fam) => (familyScores.get(fam.family) || 0) >= threshold);
+  } else {
+    candidateBlueprints = [...STYLE_FAMILIES];
+  }
+
+  // Filter out recently used if alternatives exist
+  const freshCandidates = candidateBlueprints.filter((fam) => !recentlyUsed.has(fam.family));
+  const pool = freshCandidates.length > 0 ? freshCandidates : candidateBlueprints;
+
+  // 5. Probabilistic weighted selection using PRNG from seed for endless thematic variety
+  const weights = pool.map((fam) => {
+    const baseScore = familyScores.get(fam.family) || 1;
+    // Temperature smoothed weights + random jitter
+    return Math.max(1, baseScore) + prng() * 3;
   });
 
-  scored.sort((a, b) => b.score - a.score);
-  return scored[0].fam;
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+  let randomVal = prng() * totalWeight;
+
+  for (let i = 0; i < pool.length; i++) {
+    randomVal -= weights[i];
+    if (randomVal <= 0) {
+      return pool[i];
+    }
+  }
+
+  return pool[0];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1003,5 +1181,55 @@ export function createSlideBackgroundFromVisualDirection(
       color: vd.decorativeShapes.color,
       opacity: vd.decorativeShapes.opacity,
     },
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 10. Prompt-Themed Randomized Background Generator & Document Applier
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Generates a freshly randomized, prompt-congruent VisualDirection.
+ * Guarantees distinct procedural styling while strictly respecting the topic's domain.
+ */
+export function generatePromptThemedBackground(
+  topic: string,
+  options: GenerateVisualDirectionOptions = {}
+): VisualDirection {
+  const seed = options.seed || `theme-rand-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  return generateVisualDirection(topic, {
+    ...options,
+    seed,
+  });
+}
+
+/**
+ * Applies a visual direction and its synthesized theme + contextual slide backgroundSpecs
+ * across an entire DocumentSpec, while preserving content elements and slide hierarchy.
+ */
+export function applyVisualDirectionToDocument(
+  doc: DocumentSpec,
+  vd: VisualDirection
+): DocumentSpec {
+  const newTheme = visualDirectionToThemeSpec(vd, doc.theme?.mode || vd.mode);
+  const totalSlides = doc.pages.length;
+
+  const updatedPages = doc.pages.map((page, idx) => ({
+    ...page,
+    backgroundSpec: createSlideBackgroundFromVisualDirection(
+      vd,
+      page.archetype,
+      page.pageNumber || idx + 1,
+      totalSlides
+    ),
+    // Clear solid backgroundOverride unless slide is locked or explicitly user-overridden
+    backgroundOverride: page.isLocked ? page.backgroundOverride : undefined,
+  }));
+
+  return {
+    ...doc,
+    visualDirection: vd,
+    theme: newTheme,
+    pages: updatedPages,
   };
 }

@@ -37,6 +37,11 @@ import { buildDiagramDocumentSpec } from "@/lib/generators/diagram/diagram-build
 import { buildChartDocumentSpec } from "@/lib/generators/chart/chart-builder";
 import { ComprehensiveQualityReport } from "@/lib/quality/quality-types";
 import { repairAndAnalyze } from "@/lib/quality/quality-engine";
+import {
+  generatePromptThemedBackground,
+  createSlideBackgroundFromVisualDirection,
+  visualDirectionToThemeSpec,
+} from "./visual-direction-engine";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Request Schema
@@ -429,9 +434,17 @@ export function createDeterministicFallbackDoc(
   // ── Presentation fallback — uses ACTUAL brief content, zero invented text ──
 
   const preset = CANVAS_PRESETS[aspectRatio] || CANVAS_PRESETS["16:9"];
+  const visualDirection = generatePromptThemedBackground(brief.coreTopic);
+  const effectiveTheme = theme || visualDirectionToThemeSpec(visualDirection);
 
   const pages: PageSpec[] = archetypes.map((archetype, idx) => {
     const pageNum = idx + 1;
+    const backgroundSpec = createSlideBackgroundFromVisualDirection(
+      visualDirection,
+      archetype,
+      pageNum,
+      archetypes.length
+    );
     const themeData = brief.keyThemes[idx] || {
       title: `${brief.coreTopic} — Section ${pageNum}`,
       keyPoints: [brief.purpose],
@@ -683,6 +696,7 @@ export function createDeterministicFallbackDoc(
       subtitle: themeData.keyPoints[0]?.slice(0, 120) || brief.purpose,
       badge: archetype.toUpperCase().replace(/_/g, " ").slice(0, 25),
       notes: `Slide ${pageNum}: ${themeData.title}. Key points: ${themeData.keyPoints.slice(0, 2).join("; ")}.`,
+      backgroundSpec,
       elements,
     };
   });
@@ -705,7 +719,8 @@ export function createDeterministicFallbackDoc(
       unit: "px",
       dpi: 96,
     },
-    theme,
+    theme: effectiveTheme,
+    visualDirection,
     pages,
     exportSettings: {
       targetFormat: "pptx",

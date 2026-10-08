@@ -158,7 +158,7 @@ export function renderSlideFooter(
  */
 export function renderTitleSlide(slide: pptxgen.Slide, page: PageSpec, ctx: RenderContext) {
   const tokens = ctx.tokens;
-  const mediaElem = page.elements.find((e) => e.type === "media");
+  const mediaElem = page.elements.find((e) => e.type === "media" && (!e.position || typeof (e.position as any).x !== "number"));
 
   // Background accent decorative shape
   slide.addShape("rect", {
@@ -179,10 +179,11 @@ export function renderTitleSlide(slide: pptxgen.Slide, page: PageSpec, ctx: Rend
     const rightY = (ctx.slideH - rightH) / 2;
 
     // Category Badge Pill
+    let curY = ctx.slideH * 0.16;
     if (page.badge) {
       slide.addText(sanitizeBadge(page.badge, "EXECUTIVE BRIEFING"), {
         x: leftMargin,
-        y: ctx.slideH * 0.2,
+        y: curY,
         w: leftW,
         h: 0.35,
         fontSize: 10,
@@ -191,60 +192,99 @@ export function renderTitleSlide(slide: pptxgen.Slide, page: PageSpec, ctx: Rend
         bold: true,
         charSpacing: 2.5,
       });
+      curY += 0.45;
     }
 
     // Hero Headline
     const fitTitle = calculateTextFitting(
       page.title,
       leftW,
-      2.2,
-      tokens.typography.heroSizePt * 0.85
+      1.8,
+      tokens.typography.heroSizePt * 0.8
     );
+    const titleH = Math.min(1.8, Math.max(0.9, fitTitle.cleanText.length > 50 ? 1.5 : 1.0));
     slide.addText(fitTitle.cleanText, {
       x: leftMargin,
-      y: ctx.slideH * 0.27,
+      y: curY,
       w: leftW,
-      h: 2.2,
+      h: titleH,
       fontSize: fitTitle.adjustedFontSizePt,
       fontFace: tokens.typography.headingFont,
       color: tokens.colors.textPrimary,
       bold: true,
-      valign: "middle",
+      valign: "top",
     });
+    curY += titleH + 0.2;
 
     // Subtitle
     if (page.subtitle) {
-      const fitSub = calculateTextFitting(page.subtitle, leftW, 1.1, 15);
+      const fitSub = calculateTextFitting(page.subtitle, leftW, 1.2, 13);
+      const subH = Math.min(1.3, Math.max(0.6, fitSub.cleanText.length > 80 ? 1.1 : 0.6));
       slide.addText(fitSub.cleanText, {
         x: leftMargin,
-        y: ctx.slideH * 0.57,
+        y: curY,
         w: leftW,
-        h: 1.1,
+        h: subH,
         fontSize: fitSub.adjustedFontSizePt,
         fontFace: tokens.typography.bodyFont,
         color: tokens.colors.textSecondary,
+        valign: "top",
       });
+      curY += subH + 0.2;
     }
 
-    // Presenter / Date tag at bottom
+    // Non-media elements under subtitle (only if not duplicate and space permits)
+    const nonMedia = page.elements.filter((e) => e.id !== mediaElem.id);
+    for (const elem of nonMedia) {
+      if (curY > ctx.slideH - 1.4) break;
+      if (elem.type === "text" && "content" in elem) {
+        const isDuplicate =
+          (page.subtitle && (elem.content.includes(page.subtitle.slice(0, 25)) || page.subtitle.includes(elem.content.slice(0, 25)))) ||
+          (page.title && (elem.content.includes(page.title.slice(0, 25)) || page.title.includes(elem.content.slice(0, 25))));
+        if (isDuplicate) continue;
+
+        const fit = calculateTextFitting(elem.content, leftW, 0.7, 11);
+        slide.addText(fit.cleanText, {
+          x: leftMargin,
+          y: curY,
+          w: leftW,
+          h: 0.65,
+          fontSize: fit.adjustedFontSizePt,
+          fontFace: tokens.typography.bodyFont,
+          color: tokens.colors.textSecondary,
+        });
+        curY += 0.7;
+      }
+    }
+
+    // Presenter / Attribution tag at bottom
     slide.addText("SlideCraft AI Studio  •  Executive Presentation", {
       x: leftMargin,
-      y: ctx.slideH - 0.9,
+      y: ctx.slideH - 0.75,
       w: leftW,
-      h: 0.4,
-      fontSize: 10,
+      h: 0.35,
+      fontSize: 9.5,
       fontFace: tokens.typography.bodyFont,
       color: tokens.colors.textSecondary,
     });
 
-    // Right Column: Visual Media Container (FLUX Textless Artwork)
-    renderMediaElement(slide, mediaElem, rightX, rightY, rightW, rightH, ctx);
+    // Right Column: Visual Media Container with Card Frame
+    slide.addShape("roundRect", {
+      x: rightX,
+      y: rightY,
+      w: rightW,
+      h: rightH,
+      fill: { color: tokens.colors.surface },
+      line: { color: tokens.colors.border, width: 1 },
+      rectRadius: tokens.style.borderRadius,
+    });
+    renderMediaElement(slide, mediaElem, rightX + 0.15, rightY + 0.15, rightW - 0.3, rightH - 0.3, ctx);
   } else {
     // Standard Centered/Left Title Slide
     if (page.badge) {
       slide.addText(page.badge.toUpperCase(), {
         x: 1.2,
-        y: ctx.slideH * 0.28,
+        y: ctx.slideH * 0.25,
         w: ctx.slideW - 2.4,
         h: 0.4,
         fontSize: 11,
@@ -252,6 +292,7 @@ export function renderTitleSlide(slide: pptxgen.Slide, page: PageSpec, ctx: Rend
         color: tokens.colors.secondary,
         bold: true,
         charSpacing: 3,
+        align: "center",
       });
     }
 
@@ -263,7 +304,7 @@ export function renderTitleSlide(slide: pptxgen.Slide, page: PageSpec, ctx: Rend
     );
     slide.addText(fitTitle.cleanText, {
       x: 1.2,
-      y: ctx.slideH * 0.35,
+      y: ctx.slideH * 0.32,
       w: ctx.slideW - 2.4,
       h: 1.8,
       fontSize: fitTitle.adjustedFontSizePt,
@@ -271,29 +312,50 @@ export function renderTitleSlide(slide: pptxgen.Slide, page: PageSpec, ctx: Rend
       color: tokens.colors.textPrimary,
       bold: true,
       valign: "middle",
+      align: "center",
     });
 
     if (page.subtitle) {
       const fitSub = calculateTextFitting(page.subtitle, ctx.slideW - 2.4, 1.0, 18);
       slide.addText(fitSub.cleanText, {
         x: 1.2,
-        y: ctx.slideH * 0.58,
+        y: ctx.slideH * 0.54,
         w: ctx.slideW - 2.4,
         h: 0.9,
         fontSize: fitSub.adjustedFontSizePt,
         fontFace: tokens.typography.bodyFont,
         color: tokens.colors.textSecondary,
+        align: "center",
       });
     }
 
+    // Render any non-empty elements centered
+    let elemY = ctx.slideH * 0.68;
+    page.elements.slice(0, 2).forEach((elem) => {
+      if (elem.type === "text" && "content" in elem) {
+        slide.addText(elem.content, {
+          x: 1.2,
+          y: elemY,
+          w: ctx.slideW - 2.4,
+          h: 0.45,
+          fontSize: 11,
+          fontFace: tokens.typography.bodyFont,
+          color: tokens.colors.textSecondary,
+          align: "center",
+        });
+        elemY += 0.45;
+      }
+    });
+
     slide.addText("SlideCraft AI Studio  •  Executive Presentation", {
       x: 1.2,
-      y: ctx.slideH - 1.0,
-      w: 6.0,
-      h: 0.4,
-      fontSize: 11,
+      y: ctx.slideH - 0.75,
+      w: ctx.slideW - 2.4,
+      h: 0.35,
+      fontSize: 10,
       fontFace: tokens.typography.bodyFont,
       color: tokens.colors.textSecondary,
+      align: "center",
     });
   }
 }
@@ -340,6 +402,21 @@ export function renderTitleAndContent(slide: pptxgen.Slide, page: PageSpec, ctx:
         h: blockH,
       });
       curY += blockH + 0.3;
+    } else if (elem.type === "metric") {
+      slide.addText(`${elem.value}: ${elem.label}`, {
+        x: marginX,
+        y: curY,
+        w: contentW,
+        h: 0.6,
+        fontSize: tokens.typography.h2SizePt,
+        fontFace: tokens.typography.headingFont,
+        color: tokens.colors.secondary,
+        bold: true,
+      });
+      curY += 0.7;
+    } else if (elem.type === "media" && (!elem.position || typeof (elem.position as any).x !== "number")) {
+      renderMediaElement(slide, elem, marginX, curY, Math.min(contentW, 6.0), 3.0, ctx);
+      curY += 3.2;
     }
   });
 }
@@ -447,13 +524,62 @@ export function renderTwoColumn(slide: pptxgen.Slide, page: PageSpec, ctx: Rende
   const metricItem = activeRight.find((e) => e.type === "metric") as
     | Extract<ContentElement, { type: "metric" }>
     | undefined;
-  const mediaItem = activeRight.find((e) => e.type === "media");
+  const mediaItem = activeRight.find((e) => e.type === "media" && (!e.position || typeof (e.position as any).x !== "number"));
   const quoteItem = activeRight.find(
     (e): e is Extract<ContentElement, { type: "text" }> =>
       e.type === "text" && (e as any).variant === "quote"
   );
 
-  if (mediaItem) {
+  if (mediaItem && metricItem) {
+    // Both media AND metric exist! Render media on top (52% height) and metric card on bottom (44% height)
+    const mediaH = Math.max(1.8, colH * 0.52);
+    renderMediaElement(
+      slide,
+      mediaItem,
+      rightX + 0.2,
+      contentStartY + 0.2,
+      rightColW - 0.4,
+      mediaH - 0.2,
+      ctx
+    );
+
+    const metricY = contentStartY + mediaH + 0.15;
+    const metricH = colH - mediaH - 0.25;
+
+    slide.addShape("roundRect", {
+      x: rightX + 0.2,
+      y: metricY,
+      w: rightColW - 0.4,
+      h: metricH,
+      fill: { color: tokens.colors.background },
+      line: { color: tokens.colors.secondary, width: 1 },
+      rectRadius: tokens.style.borderRadius,
+    });
+
+    slide.addText(metricItem.value, {
+      x: rightX + 0.3,
+      y: metricY + 0.15,
+      w: rightColW - 0.6,
+      h: metricH * 0.48,
+      fontSize: 26,
+      fontFace: tokens.typography.headingFont,
+      color: tokens.colors.secondary,
+      bold: true,
+      align: "center",
+      valign: "middle",
+    });
+
+    slide.addText(metricItem.label, {
+      x: rightX + 0.3,
+      y: metricY + metricH * 0.55,
+      w: rightColW - 0.6,
+      h: metricH * 0.38,
+      fontSize: 11,
+      fontFace: tokens.typography.bodyFont,
+      color: tokens.colors.textSecondary,
+      align: "center",
+    });
+  } else if (mediaItem) {
     renderMediaElement(
       slide,
       mediaItem,
@@ -563,9 +689,56 @@ export function renderThreeColumn(slide: pptxgen.Slide, page: PageSpec, ctx: Ren
   const cardW = (ctx.slideW - marginX * 2 - gutter * 2) / 3;
   const cardH = ctx.slideH - contentStartY - 0.7;
 
+  const listElem = page.elements.find((e) => e.type === "list") as any;
+  const cardItems =
+    listElem && listElem.items && listElem.items.length > 0
+      ? listElem.items.slice(0, 3).map((it: any, idx: number) => {
+          let title = `Pillar 0${idx + 1}`;
+          let subtext = "";
+          if (typeof it === "string") {
+            if (it.includes(":")) {
+              const parts = it.split(/:\s*(.*)/s);
+              title = parts[0].trim();
+              subtext = (parts[1] || "").trim();
+            } else if (it.includes(" — ")) {
+              const parts = it.split(/ — \s*(.*)/s);
+              title = parts[0].trim();
+              subtext = (parts[1] || "").trim();
+            } else {
+              title = it;
+            }
+          } else if (it) {
+            if (it.subtext) {
+              title = it.text || title;
+              subtext = it.subtext;
+            } else if (it.text && it.text.includes(":")) {
+              const parts = it.text.split(/:\s*(.*)/s);
+              title = parts[0].trim();
+              subtext = (parts[1] || "").trim();
+            } else if (it.text && it.text.includes(" — ")) {
+              const parts = it.text.split(/ — \s*(.*)/s);
+              title = parts[0].trim();
+              subtext = (parts[1] || "").trim();
+            } else {
+              title = it.text || title;
+              subtext = it.subtext || "";
+            }
+          }
+          return { id: it?.id || `card-${idx}`, title, subtext };
+        })
+      : page.elements.slice(0, 3).map((elem: any, idx: number) => ({
+          id: elem.id,
+          title: elem.title || elem.content || elem.value || `Pillar 0${idx + 1}`,
+          subtext: elem.subtext || elem.label || (elem.value && elem.label ? `${elem.label}` : "") || "",
+        }));
+
   for (let i = 0; i < 3; i++) {
     const x = marginX + i * (cardW + gutter);
-    const elem = page.elements[i];
+    const item = cardItems[i] || {
+      id: `card-${i}`,
+      title: `Pillar 0${i + 1}`,
+      subtext: "",
+    };
 
     // Card background shape
     slide.addShape("roundRect", {
@@ -578,50 +751,60 @@ export function renderThreeColumn(slide: pptxgen.Slide, page: PageSpec, ctx: Ren
       rectRadius: tokens.style.borderRadius,
     });
 
-    // Step / Pillar Index badge
-    slide.addShape("ellipse", {
-      x: x + 0.3,
+    // Step / Pillar Index badge pill
+    slide.addShape("roundRect", {
+      x: x + 0.35,
       y: contentStartY + 0.35,
-      w: 0.5,
-      h: 0.5,
-      fill: { color: tokens.colors.secondary },
+      w: 0.65,
+      h: 0.3,
+      fill: { color: tokens.colors.background },
+      line: { color: tokens.colors.secondary, width: 1 },
+      rectRadius: 0.08,
     });
     slide.addText(`0${i + 1}`, {
-      x: x + 0.3,
+      x: x + 0.35,
       y: contentStartY + 0.35,
-      w: 0.5,
-      h: 0.5,
-      fontSize: 11,
+      w: 0.65,
+      h: 0.3,
+      fontSize: 10,
       fontFace: tokens.typography.headingFont,
-      color: "FFFFFF",
+      color: tokens.colors.secondary,
       bold: true,
       align: "center",
       valign: "middle",
     });
 
-    // Card Content
-    const listElem = page.elements.find((e) => e.type === "list") as any;
-    let cardContent = "";
-    if (listElem && listElem.items && listElem.items[i]) {
-      const it = listElem.items[i];
-      cardContent = typeof it === "string" ? it : it.text || "";
-    } else if (elem?.type === "metric") {
-      cardContent = `${elem.value}\n${elem.label}`;
-    } else if (elem?.type === "text") {
-      cardContent = elem.content;
-    } else {
-      cardContent = `Key Focus Area 0${i + 1}`;
-    }
-
-    slide.addText(cardContent, {
-      x: x + 0.3,
-      y: contentStartY + 1.1,
-      w: cardW - 0.6,
-      h: cardH - 1.4,
-      fontSize: tokens.typography.bodySizePt,
-      fontFace: tokens.typography.bodyFont,
+    // Card Title
+    const fitTitle = calculateTextFitting(item.title, cardW - 0.7, 1.6, 14);
+    const titleH = Math.min(1.8, Math.max(0.7, fitTitle.cleanText.length > 80 ? 1.5 : fitTitle.cleanText.length > 40 ? 1.1 : 0.7));
+    slide.addText(fitTitle.cleanText, {
+      x: x + 0.35,
+      y: contentStartY + 0.85,
+      w: cardW - 0.7,
+      h: titleH,
+      fontSize: fitTitle.adjustedFontSizePt,
+      fontFace: tokens.typography.headingFont,
       color: tokens.colors.textPrimary,
+      bold: true,
+      valign: "top",
     });
+
+    // Card Subtext / Description
+    if (item.subtext) {
+      const subY = contentStartY + 0.85 + titleH + 0.15;
+      const subAvailH = Math.max(0.6, cardH - (subY - contentStartY) - 0.3);
+      const fitSub = calculateTextFitting(item.subtext, cardW - 0.7, subAvailH, 10.5);
+      slide.addText(fitSub.cleanText, {
+        x: x + 0.35,
+        y: subY,
+        w: cardW - 0.7,
+        h: subAvailH,
+        fontSize: fitSub.adjustedFontSizePt,
+        fontFace: tokens.typography.bodyFont,
+        color: tokens.colors.textSecondary,
+        valign: "top",
+      });
+    }
   }
 }
 
@@ -700,7 +883,13 @@ export function renderBigStatistic(slide: pptxgen.Slide, page: PageSpec, ctx: Re
   const gutter = tokens.spacing.gutterInches;
   const availableW = ctx.slideW - marginX * 2;
   const cardW = (availableW - gutter * (count - 1)) / count;
-  const cardH = ctx.slideH - contentStartY - 0.7;
+
+  // Check if there are non-metric elements (notes, takeaways, explanations)
+  const nonMetrics = page.elements.filter(
+    (e) => e.type !== "metric" && e.id !== "poster-title" && e.id !== "poster-subtitle"
+  );
+  const hasBottomContent = nonMetrics.length > 0;
+  const cardH = hasBottomContent ? 2.5 : ctx.slideH - contentStartY - 0.7;
 
   metrics.slice(0, 4).forEach((m, idx) => {
     const x = marginX + idx * (cardW + gutter);
@@ -718,10 +907,10 @@ export function renderBigStatistic(slide: pptxgen.Slide, page: PageSpec, ctx: Re
     // Metric Value
     slide.addText(m.value, {
       x: x + 0.2,
-      y: contentStartY + 0.5,
+      y: contentStartY + (hasBottomContent ? 0.35 : 0.6),
       w: cardW - 0.4,
-      h: 1.1,
-      fontSize: 34,
+      h: hasBottomContent ? 0.9 : 1.1,
+      fontSize: hasBottomContent ? 30 : 36,
       fontFace: tokens.typography.headingFont,
       color: tokens.colors.secondary,
       bold: true,
@@ -732,33 +921,40 @@ export function renderBigStatistic(slide: pptxgen.Slide, page: PageSpec, ctx: Re
     // Metric Label
     slide.addText(m.label, {
       x: x + 0.2,
-      y: contentStartY + 1.8,
+      y: contentStartY + (hasBottomContent ? 1.3 : 1.8),
       w: cardW - 0.4,
-      h: 0.9,
+      h: hasBottomContent ? 0.6 : 0.9,
       fontSize: tokens.typography.bodySizePt,
       fontFace: tokens.typography.bodyFont,
       color: tokens.colors.textSecondary,
       align: "center",
     });
 
-    // Delta pill
+    // Delta pill / context tag
     if (m.delta) {
+      const isShort = m.delta.length <= 8;
+      const pillW = isShort ? 1.4 : Math.min(cardW - 0.4, Math.max(1.8, m.delta.length * 0.08 + 0.5));
+      const pillH = isShort ? 0.35 : 0.45;
+      const pillY = contentStartY + (hasBottomContent ? 1.95 : cardH - 0.85);
+      const pillX = x + (cardW - pillW) / 2;
+
       slide.addShape("roundRect", {
-        x: x + (cardW - 1.4) / 2,
-        y: contentStartY + cardH - 0.8,
-        w: 1.4,
-        h: 0.35,
+        x: pillX,
+        y: pillY,
+        w: pillW,
+        h: pillH,
         fill: { color: m.trend === "up" ? "DCFCE7" : tokens.colors.background },
         line: { color: m.trend === "up" ? "16A34A" : tokens.colors.border, width: 1 },
         rectRadius: 0.1,
       });
 
-      slide.addText(m.delta, {
-        x: x + (cardW - 1.4) / 2,
-        y: contentStartY + cardH - 0.8,
-        w: 1.4,
-        h: 0.35,
-        fontSize: 10,
+      const fitD = calculateTextFitting(m.delta, pillW - 0.2, pillH, isShort ? 10 : 8.5);
+      slide.addText(fitD.cleanText, {
+        x: pillX + 0.1,
+        y: pillY,
+        w: pillW - 0.2,
+        h: pillH,
+        fontSize: fitD.adjustedFontSizePt,
         fontFace: tokens.typography.bodyFont,
         color: m.trend === "up" ? "15803D" : tokens.colors.textPrimary,
         bold: true,
@@ -767,6 +963,55 @@ export function renderBigStatistic(slide: pptxgen.Slide, page: PageSpec, ctx: Re
       });
     }
   });
+
+  // Render bottom non-metric container card if non-metric elements exist
+  if (hasBottomContent) {
+    const bottomY = contentStartY + cardH + 0.3;
+    const bottomH = Math.max(0.8, ctx.slideH - bottomY - 0.7);
+
+    slide.addShape("roundRect", {
+      x: marginX,
+      y: bottomY,
+      w: availableW,
+      h: bottomH,
+      fill: { color: tokens.colors.surface },
+      line: { color: tokens.colors.border, width: 1 },
+      rectRadius: tokens.style.borderRadius,
+    });
+
+    let textY = bottomY + 0.2;
+    for (const elem of nonMetrics.slice(0, 3)) {
+      if (textY > bottomY + bottomH - 0.3) break;
+      if (elem.type === "text" && "content" in elem) {
+        const fit = calculateTextFitting(elem.content, availableW - 0.6, 0.5, 12);
+        slide.addText(fit.cleanText, {
+          x: marginX + 0.3,
+          y: textY,
+          w: availableW - 0.6,
+          h: 0.45,
+          fontSize: fit.adjustedFontSizePt,
+          fontFace: tokens.typography.bodyFont,
+          color: tokens.colors.textSecondary,
+        });
+        textY += 0.5;
+      } else if (elem.type === "list" && "items" in elem) {
+        elem.items.slice(0, 2).forEach((it) => {
+          if (textY > bottomY + bottomH - 0.3) return;
+          const fit = calculateTextFitting(it.text, availableW - 0.6, 0.45, 11);
+          slide.addText(`•  ${fit.cleanText}`, {
+            x: marginX + 0.3,
+            y: textY,
+            w: availableW - 0.6,
+            h: 0.4,
+            fontSize: fit.adjustedFontSizePt,
+            fontFace: tokens.typography.bodyFont,
+            color: tokens.colors.textSecondary,
+          });
+          textY += 0.45;
+        });
+      }
+    }
+  }
 }
 
 /**
@@ -777,59 +1022,210 @@ export function renderComparison(slide: pptxgen.Slide, page: PageSpec, ctx: Rend
   renderSlideFooter(slide, page, ctx);
 
   const tokens = ctx.tokens;
+  const marginX = tokens.spacing.marginXInches;
+  const availableW = ctx.slideW - marginX * 2;
+  const gutter = tokens.spacing.gutterInches;
+
   const tableElem = page.elements.find(
     (e): e is Extract<ContentElement, { type: "table" }> => e.type === "table"
   );
 
-  const headers = tableElem ? tableElem.headers : ["Capability", "SlideCraft AI", "Legacy Tools"];
-  const rows = tableElem
-    ? tableElem.rows
-    : [
-        ["Generation Engine", "Deterministic Zod AST", "Static Code Hallucinations"],
-        ["PPTX Export", "100% Native Vector Objects", "Flat Image Screenshots"],
-        ["Layout Variety", "Content-Aware Dynamic Selection", "Fixed Monotonous Grids"],
-      ];
+  if (tableElem && tableElem.headers && tableElem.headers.length > 0) {
+    const headers = tableElem.headers;
+    const rows = tableElem.rows || [];
+    const rowsData: any[][] = [];
 
-  const rowsData: any[][] = [];
-
-  // Header
-  rowsData.push(
-    headers.map((h) => ({
-      text: h,
-      options: {
-        fill: { color: tokens.colors.primary },
-        color: "FFFFFF",
-        bold: true,
-        fontSize: 12,
-        fontFace: tokens.typography.headingFont,
-        align: "center",
-      },
-    }))
-  );
-
-  // Rows
-  rows.forEach((row, rIdx) => {
+    // Header
     rowsData.push(
-      row.map((cell, cIdx) => ({
-        text: cell,
+      headers.map((h) => ({
+        text: h,
         options: {
-          fill: { color: rIdx % 2 === 0 ? tokens.colors.surface : tokens.colors.background },
-          color: cIdx === 0 ? tokens.colors.primary : tokens.colors.textPrimary,
-          bold: cIdx === 0,
-          fontSize: 11,
-          fontFace: tokens.typography.bodyFont,
-          align: cIdx === 0 ? "left" : "center",
+          fill: { color: tokens.colors.primary },
+          color: "FFFFFF",
+          bold: true,
+          fontSize: 12,
+          fontFace: tokens.typography.headingFont,
+          align: "center",
         },
       }))
     );
-  });
 
-  slide.addTable(rowsData, {
-    x: tokens.spacing.marginXInches,
-    y: contentStartY,
-    w: ctx.slideW - tokens.spacing.marginXInches * 2,
-    colW: (ctx.slideW - tokens.spacing.marginXInches * 2) / headers.length,
-    border: { type: "solid", pt: 1, color: tokens.colors.border },
+    // Rows
+    rows.forEach((row, rIdx) => {
+      rowsData.push(
+        row.map((cell, cIdx) => ({
+          text: cell,
+          options: {
+            fill: { color: rIdx % 2 === 0 ? tokens.colors.surface : tokens.colors.background },
+            color: cIdx === 0 ? tokens.colors.primary : tokens.colors.textPrimary,
+            bold: cIdx === 0,
+            fontSize: 11,
+            fontFace: tokens.typography.bodyFont,
+            align: cIdx === 0 ? "left" : "center",
+          },
+        }))
+      );
+    });
+
+    slide.addTable(rowsData, {
+      x: marginX,
+      y: contentStartY,
+      w: availableW,
+      colW: availableW / headers.length,
+      border: { type: "solid", pt: 1, color: tokens.colors.border },
+    });
+    return;
+  }
+
+  // Multi-column comparison cards (as generated by plan-to-slides / PageRenderer)
+  interface ComparisonColumn {
+    title: string;
+    points: string[];
+    isHighlighted?: boolean;
+  }
+
+  const columns: ComparisonColumn[] = [];
+
+  // Check for comp-0-title, comp-1-title pattern or h3 text headings
+  const titleEls = page.elements.filter(
+    (e): e is Extract<ContentElement, { type: "text" }> =>
+      e.type === "text" && (e.id.includes("comp-") || (e as any).variant === "h3")
+  );
+
+  if (titleEls.length >= 2) {
+    titleEls.forEach((tEl, idx) => {
+      const matchingList = page.elements.find(
+        (e): e is Extract<ContentElement, { type: "list" }> =>
+          e.type === "list" && (e.id.includes(`comp-${idx}`) || e.id.includes(`comp-${idx}-pts`))
+      ) || page.elements.filter((e): e is Extract<ContentElement, { type: "list" }> => e.type === "list")[idx];
+
+      const points = matchingList?.items?.map((it) => it.text) || [];
+      columns.push({
+        title: tEl.content,
+        points,
+        isHighlighted: idx === 1,
+      });
+    });
+  } else {
+    const listEls = page.elements.filter(
+      (e): e is Extract<ContentElement, { type: "list" }> => e.type === "list"
+    );
+    if (listEls.length >= 2) {
+      listEls.forEach((lEl, idx) => {
+        columns.push({
+          title: `Option 0${idx + 1}`,
+          points: lEl.items.map((it) => it.text),
+          isHighlighted: idx === 1,
+        });
+      });
+    } else if (listEls.length === 1 && listEls[0].items.length >= 2) {
+      const half = Math.ceil(listEls[0].items.length / 2);
+      columns.push({
+        title: "Baseline Considerations",
+        points: listEls[0].items.slice(0, half).map((it) => it.text),
+        isHighlighted: false,
+      });
+      columns.push({
+        title: "Proposed Strategic Focus",
+        points: listEls[0].items.slice(half).map((it) => it.text),
+        isHighlighted: true,
+      });
+    } else {
+      columns.push({
+        title: "Current Baseline",
+        points: ["Conventional heuristic workflows", "Fragmented status tracking", "Manual operational overhead"],
+        isHighlighted: false,
+      });
+      columns.push({
+        title: "Optimized Target State",
+        points: ["Automated continuous evaluation", "Unified real-time visibility", "Standardized quality guardrails"],
+        isHighlighted: true,
+      });
+    }
+  }
+
+  const colCount = Math.min(Math.max(columns.length, 1), 3);
+  const cardW = (availableW - gutter * (colCount - 1)) / colCount;
+  const cardH = ctx.slideH - contentStartY - 0.7;
+
+  columns.slice(0, 3).forEach((col, idx) => {
+    const x = marginX + idx * (cardW + gutter);
+
+    // Column Card Container
+    slide.addShape("roundRect", {
+      x,
+      y: contentStartY,
+      w: cardW,
+      h: cardH,
+      fill: { color: tokens.colors.surface },
+      line: {
+        color: col.isHighlighted ? tokens.colors.secondary : tokens.colors.border,
+        width: col.isHighlighted ? 2 : 1,
+      },
+      rectRadius: tokens.style.borderRadius,
+    });
+
+    // Header badge / index pill
+    slide.addShape("roundRect", {
+      x: x + 0.3,
+      y: contentStartY + 0.35,
+      w: 0.7,
+      h: 0.3,
+      fill: { color: col.isHighlighted ? tokens.colors.secondary : tokens.colors.background },
+      line: { color: col.isHighlighted ? tokens.colors.secondary : tokens.colors.border, width: 1 },
+      rectRadius: 0.08,
+    });
+
+    slide.addText(`0${idx + 1}`, {
+      x: x + 0.3,
+      y: contentStartY + 0.35,
+      w: 0.7,
+      h: 0.3,
+      fontSize: 10,
+      fontFace: tokens.typography.headingFont,
+      color: col.isHighlighted ? "FFFFFF" : tokens.colors.textSecondary,
+      bold: true,
+      align: "center",
+      valign: "middle",
+    });
+
+    // Column Title
+    slide.addText(col.title, {
+      x: x + 0.3,
+      y: contentStartY + 0.8,
+      w: cardW - 0.6,
+      h: 0.7,
+      fontSize: 16,
+      fontFace: tokens.typography.headingFont,
+      color: col.isHighlighted ? tokens.colors.secondary : tokens.colors.textPrimary,
+      bold: true,
+    });
+
+    // Divider line
+    slide.addShape("line", {
+      x: x + 0.3,
+      y: contentStartY + 1.55,
+      w: cardW - 0.6,
+      h: 0,
+      line: { color: tokens.colors.border, width: 1 },
+    });
+
+    // Points
+    let pY = contentStartY + 1.75;
+    col.points.forEach((pt) => {
+      if (pY > contentStartY + cardH - 0.5) return;
+      const fit = calculateTextFitting(pt, cardW - 0.9, 0.6, 11);
+      slide.addText(`•  ${fit.cleanText}`, {
+        x: x + 0.3,
+        y: pY,
+        w: cardW - 0.6,
+        h: 0.5,
+        fontSize: fit.adjustedFontSizePt,
+        fontFace: tokens.typography.bodyFont,
+        color: tokens.colors.textSecondary,
+      });
+      pY += 0.55;
+    });
   });
 }
 
@@ -843,6 +1239,7 @@ export function renderTimeline(slide: pptxgen.Slide, page: PageSpec, ctx: Render
   const tokens = ctx.tokens;
   const marginX = tokens.spacing.marginXInches;
   const availableW = ctx.slideW - marginX * 2;
+  const gutter = tokens.spacing.gutterInches;
 
   const listElem = page.elements.find(
     (e): e is Extract<ContentElement, { type: "list" }> => e.type === "list"
@@ -854,11 +1251,26 @@ export function renderTimeline(slide: pptxgen.Slide, page: PageSpec, ctx: Render
   let milestones: { phase: string; title: string; desc: string }[] = [];
 
   if (listElem && listElem.items && listElem.items.length > 0) {
-    milestones = listElem.items.slice(0, 5).map((it, idx) => ({
-      phase: `0${idx + 1}`,
-      title: it.text,
-      desc: it.subtext || "",
-    }));
+    milestones = listElem.items.slice(0, 5).map((it, idx) => {
+      let title = it.text;
+      let desc = it.subtext || "";
+      if (!desc && it.text) {
+        if (it.text.includes(":")) {
+          const parts = it.text.split(/:\s*(.*)/s);
+          title = parts[0].trim();
+          desc = (parts[1] || "").trim();
+        } else if (it.text.includes(" — ")) {
+          const parts = it.text.split(/ — \s*(.*)/s);
+          title = parts[0].trim();
+          desc = (parts[1] || "").trim();
+        }
+      }
+      return {
+        phase: `0${idx + 1}`,
+        title,
+        desc,
+      };
+    });
   } else if (textElems.length >= 2) {
     milestones = textElems.slice(0, 5).map((t, idx) => {
       const parts = t.content.split(":");
@@ -870,75 +1282,99 @@ export function renderTimeline(slide: pptxgen.Slide, page: PageSpec, ctx: Render
     });
   } else {
     milestones = [
-      { phase: "01", title: "Discovery", desc: "Data collection and preprocessing" },
-      { phase: "02", title: "Architecture", desc: "Model synthesis & parameter tuning" },
-      { phase: "03", title: "Validation", desc: "Benchmark verification against baseline" },
-      { phase: "04", title: "Deployment", desc: "Production rollout and monitoring" },
+      { phase: "01", title: "Initiation", desc: `Strategic scope and baseline planning for ${page.title}` },
+      { phase: "02", title: "Execution", desc: "Core implementation and workflow orchestration" },
+      { phase: "03", title: "Validation", desc: "Rigorous testing and benchmark verification" },
+      { phase: "04", title: "Deployment", desc: "Production rollout and operational governance" },
     ];
   }
 
-  const count = milestones.length;
-  const stepW = availableW / count;
-  const lineY = contentStartY + 1.2;
+  const count = Math.min(milestones.length, 5);
+  const cardW = (availableW - gutter * (count - 1)) / count;
+  const cardH = 2.8;
+  const cardY = contentStartY + 0.6;
 
-  // Horizontal vector connector line
+  // Horizontal connector line connecting across the cards
   slide.addShape("line", {
-    x: marginX + stepW / 2,
-    y: lineY,
-    w: availableW - stepW,
+    x: marginX + cardW * 0.3,
+    y: cardY - 0.25,
+    w: availableW - cardW * 0.6,
     h: 0,
-    line: { color: tokens.colors.secondary, width: 2.5 },
+    line: { color: tokens.colors.secondary, width: 2 },
   });
 
-  milestones.forEach((m, idx) => {
-    const centerX = marginX + idx * stepW + stepW / 2;
+  milestones.slice(0, 5).forEach((m, idx) => {
+    const x = marginX + idx * (cardW + gutter);
 
-    // Milestone Node Circle
+    // Connector node circle above card
     slide.addShape("ellipse", {
-      x: centerX - 0.25,
-      y: lineY - 0.25,
-      w: 0.5,
-      h: 0.5,
+      x: x + cardW / 2 - 0.15,
+      y: cardY - 0.4,
+      w: 0.3,
+      h: 0.3,
       fill: { color: tokens.colors.surface },
-      line: { color: tokens.colors.secondary, width: 2.5 },
+      line: { color: tokens.colors.secondary, width: 2 },
     });
 
-    // Milestone Phase badge
+    // Milestone Card Container
+    slide.addShape("roundRect", {
+      x,
+      y: cardY,
+      w: cardW,
+      h: cardH,
+      fill: { color: tokens.colors.surface },
+      line: { color: tokens.colors.border, width: 1 },
+      rectRadius: tokens.style.borderRadius,
+    });
+
+    // Phase Pill
+    slide.addShape("roundRect", {
+      x: x + 0.25,
+      y: cardY + 0.25,
+      w: 0.65,
+      h: 0.3,
+      fill: { color: tokens.colors.secondary, transparency: 85 },
+      line: { color: tokens.colors.secondary, width: 1 },
+      rectRadius: 0.08,
+    });
+
     slide.addText(m.phase, {
-      x: centerX - 1.0,
-      y: lineY - 0.7,
-      w: 2.0,
-      h: 0.35,
-      fontSize: 11,
+      x: x + 0.25,
+      y: cardY + 0.25,
+      w: 0.65,
+      h: 0.3,
+      fontSize: 10,
       fontFace: tokens.typography.headingFont,
       color: tokens.colors.secondary,
       bold: true,
       align: "center",
+      valign: "middle",
     });
 
-    // Milestone Title & Desc
-    slide.addText(m.title, {
-      x: centerX - 1.0,
-      y: lineY + 0.45,
-      w: 2.0,
-      h: 0.45,
-      fontSize: 12,
+    // Milestone Title
+    const fitT = calculateTextFitting(m.title, cardW - 0.5, 0.6, 12);
+    slide.addText(fitT.cleanText, {
+      x: x + 0.25,
+      y: cardY + 0.7,
+      w: cardW - 0.5,
+      h: 0.6,
+      fontSize: fitT.adjustedFontSizePt,
       fontFace: tokens.typography.headingFont,
       color: tokens.colors.textPrimary,
       bold: true,
-      align: "center",
     });
 
+    // Milestone Description
     if (m.desc) {
-      slide.addText(m.desc, {
-        x: centerX - 1.0,
-        y: lineY + 0.95,
-        w: 2.0,
-        h: 0.9,
-        fontSize: 10,
+      const fitD = calculateTextFitting(m.desc, cardW - 0.5, cardH - 1.5, 10);
+      slide.addText(fitD.cleanText, {
+        x: x + 0.25,
+        y: cardY + 1.35,
+        w: cardW - 0.5,
+        h: cardH - 1.5,
+        fontSize: fitD.adjustedFontSizePt,
         fontFace: tokens.typography.bodyFont,
         color: tokens.colors.textSecondary,
-        align: "center",
       });
     }
   });
@@ -954,6 +1390,7 @@ export function renderProcessFlow(slide: pptxgen.Slide, page: PageSpec, ctx: Ren
   const tokens = ctx.tokens;
   const marginX = tokens.spacing.marginXInches;
   const availableW = ctx.slideW - marginX * 2;
+  const gutter = 0.35;
 
   const listElem = page.elements.find(
     (e): e is Extract<ContentElement, { type: "list" }> => e.type === "list"
@@ -965,10 +1402,22 @@ export function renderProcessFlow(slide: pptxgen.Slide, page: PageSpec, ctx: Ren
   let steps: { title: string; desc: string }[] = [];
 
   if (listElem && listElem.items && listElem.items.length > 0) {
-    steps = listElem.items.slice(0, 5).map((it) => ({
-      title: it.text,
-      desc: it.subtext || "",
-    }));
+    steps = listElem.items.slice(0, 5).map((it) => {
+      let title = it.text;
+      let desc = it.subtext || "";
+      if (!desc && it.text) {
+        if (it.text.includes(":")) {
+          const parts = it.text.split(/:\s*(.*)/s);
+          title = parts[0].trim();
+          desc = (parts[1] || "").trim();
+        } else if (it.text.includes(" — ")) {
+          const parts = it.text.split(/ — \s*(.*)/s);
+          title = parts[0].trim();
+          desc = (parts[1] || "").trim();
+        }
+      }
+      return { title, desc };
+    });
   } else if (textElems.length >= 2) {
     steps = textElems.slice(0, 5).map((t) => {
       const parts = t.content.split(":");
@@ -979,19 +1428,19 @@ export function renderProcessFlow(slide: pptxgen.Slide, page: PageSpec, ctx: Ren
     });
   } else {
     steps = [
-      { title: "Ingestion", desc: "Upload raw text or document" },
-      { title: "Synthesis", desc: "LLM AST generation with Zod" },
-      { title: "Quality Protection", desc: "Automated text fit & contrast check" },
-      { title: "Export", desc: "Native editable PPTX file" },
+      { title: "Initiation", desc: `Scope and discovery for ${page.title}` },
+      { title: "Execution", desc: "Core implementation and workflow coordination" },
+      { title: "Quality Review", desc: "Automated verification and validation standards" },
+      { title: "Deployment", desc: "Production rollout and operational handover" },
     ];
   }
 
-  const count = steps.length;
-  const cardW = (availableW - 0.35 * (count - 1)) / count;
+  const count = Math.min(steps.length, 5);
+  const cardW = (availableW - gutter * (count - 1)) / count;
   const cardH = 2.9;
 
-  steps.forEach((s, idx) => {
-    const x = marginX + idx * (cardW + 0.35);
+  steps.slice(0, 5).forEach((s, idx) => {
+    const x = marginX + idx * (cardW + gutter);
 
     slide.addShape("roundRect", {
       x,
@@ -1000,43 +1449,66 @@ export function renderProcessFlow(slide: pptxgen.Slide, page: PageSpec, ctx: Ren
       h: cardH,
       fill: { color: tokens.colors.surface },
       line: { color: tokens.colors.border, width: 1 },
-      rectRadius: 0.1,
+      rectRadius: tokens.style.borderRadius,
+    });
+
+    slide.addShape("roundRect", {
+      x: x + 0.2,
+      y: contentStartY + 0.65,
+      w: 0.8,
+      h: 0.3,
+      fill: { color: tokens.colors.secondary, transparency: 85 },
+      line: { color: tokens.colors.secondary, width: 1 },
+      rectRadius: 0.08,
     });
 
     slide.addText(`Step 0${idx + 1}`, {
       x: x + 0.2,
       y: contentStartY + 0.65,
-      w: cardW - 0.4,
+      w: 0.8,
       h: 0.3,
       fontSize: 10,
       fontFace: tokens.typography.bodyFont,
       color: tokens.colors.secondary,
       bold: true,
       align: "center",
+      valign: "middle",
     });
 
-    slide.addText(s.title, {
+    const fitT = calculateTextFitting(s.title, cardW - 0.4, 0.5, 13);
+    slide.addText(fitT.cleanText, {
       x: x + 0.2,
-      y: contentStartY + 1.05,
+      y: contentStartY + 1.1,
       w: cardW - 0.4,
       h: 0.5,
-      fontSize: 13,
+      fontSize: fitT.adjustedFontSizePt,
       fontFace: tokens.typography.headingFont,
       color: tokens.colors.textPrimary,
       bold: true,
-      align: "center",
     });
 
     if (s.desc) {
-      slide.addText(s.desc, {
+      const fitD = calculateTextFitting(s.desc, cardW - 0.4, cardH - 1.8, 10);
+      slide.addText(fitD.cleanText, {
         x: x + 0.2,
-        y: contentStartY + 1.6,
+        y: contentStartY + 1.65,
         w: cardW - 0.4,
-        h: 1.1,
-        fontSize: 10,
+        h: cardH - 1.8,
+        fontSize: fitD.adjustedFontSizePt,
         fontFace: tokens.typography.bodyFont,
         color: tokens.colors.textSecondary,
-        align: "center",
+      });
+    }
+
+    // Connector arrow line between cards
+    if (idx < count - 1) {
+      const arrowX = x + cardW;
+      slide.addShape("line", {
+        x: arrowX + 0.05,
+        y: contentStartY + 0.4 + cardH / 2,
+        w: gutter - 0.1,
+        h: 0,
+        line: { color: tokens.colors.secondary, width: 1.5 },
       });
     }
   });
@@ -1188,18 +1660,64 @@ export function renderChart(slide: pptxgen.Slide, page: PageSpec, ctx: RenderCon
     bold: true,
   });
 
-  slide.addText(
-    "Data indicates 2.4x acceleration in vector content synthesis with deterministic IR over rigid static templates.",
-    {
+  // Render actual non-chart elements from page.elements
+  const nonChartElems = page.elements.filter((e) => e.type !== "chart");
+  let curY = contentStartY + 0.85;
+  if (nonChartElems.length > 0) {
+    for (const elem of nonChartElems) {
+      if (curY > contentStartY + chartH - 0.4) break;
+      if (elem.type === "text" && "content" in elem) {
+        const fit = calculateTextFitting(elem.content, rightW - 0.6, 0.8, 11);
+        slide.addText(fit.cleanText, {
+          x: rightX + 0.3,
+          y: curY,
+          w: rightW - 0.6,
+          h: 0.8,
+          fontSize: fit.adjustedFontSizePt,
+          fontFace: tokens.typography.bodyFont,
+          color: tokens.colors.textSecondary,
+        });
+        curY += 0.9;
+      } else if (elem.type === "list" && "items" in elem) {
+        elem.items.slice(0, 4).forEach((it) => {
+          if (curY > contentStartY + chartH - 0.4) return;
+          const fit = calculateTextFitting(it.text, rightW - 0.6, 0.4, 10.5);
+          slide.addText(`•  ${fit.cleanText}`, {
+            x: rightX + 0.3,
+            y: curY,
+            w: rightW - 0.6,
+            h: 0.4,
+            fontSize: fit.adjustedFontSizePt,
+            fontFace: tokens.typography.bodyFont,
+            color: tokens.colors.textSecondary,
+          });
+          curY += 0.45;
+        });
+      } else if (elem.type === "metric") {
+        slide.addText(`${elem.value}  ${elem.label}`, {
+          x: rightX + 0.3,
+          y: curY,
+          w: rightW - 0.6,
+          h: 0.5,
+          fontSize: 14,
+          fontFace: tokens.typography.headingFont,
+          bold: true,
+          color: tokens.colors.secondary,
+        });
+        curY += 0.6;
+      }
+    }
+  } else {
+    slide.addText(page.subtitle || `Key observations and metric trends for ${page.title}.`, {
       x: rightX + 0.3,
-      y: contentStartY + 0.85,
+      y: curY,
       w: rightW - 0.6,
       h: chartH - 1.2,
-      fontSize: 12,
+      fontSize: 11.5,
       fontFace: tokens.typography.bodyFont,
       color: tokens.colors.textSecondary,
-    }
-  );
+    });
+  }
 }
 
 /**
@@ -1409,101 +1927,457 @@ export function renderSummary(slide: pptxgen.Slide, page: PageSpec, ctx: RenderC
 }
 
 /**
- * 16. Closing Slide (Contact & Next Steps) — uses actual page content
+ * 16. Closing Slide (Contact & Next Steps) — matches PageRenderer 63/33 Studio Layout
  */
 export function renderClosingSlide(slide: pptxgen.Slide, page: PageSpec, ctx: RenderContext) {
+  const { contentStartY } = renderSlideHeader(slide, page, ctx);
+  renderSlideFooter(slide, page, ctx);
+
   const tokens = ctx.tokens;
+  const marginX = tokens.spacing.marginXInches;
+  const availableW = ctx.slideW - marginX * 2;
 
-  // Clean surface background
-  slide.addShape("rect", {
-    x: 0,
-    y: 0,
-    w: ctx.slideW,
-    h: ctx.slideH,
-    fill: { color: tokens.colors.background },
+  // Left 63% rail: All page elements (heading, bullet lists, notes)
+  const leftW = availableW * 0.63;
+  const leftX = marginX;
+
+  const leftElements = page.elements;
+  let elemY = contentStartY + 0.2;
+
+  leftElements.forEach((elem) => {
+    if (elemY > ctx.slideH - 1.2) return;
+
+    if (elem.type === "text" && "content" in elem) {
+      const isHeading = (elem as any).variant === "h3" || (elem as any).variant === "h2";
+      const fontSize = isHeading ? 16 : 11;
+      const fit = calculateTextFitting(elem.content, leftW, isHeading ? 0.6 : 0.8, fontSize);
+
+      slide.addText(fit.cleanText, {
+        x: leftX,
+        y: elemY,
+        w: leftW,
+        h: isHeading ? 0.5 : 0.7,
+        fontSize: fit.adjustedFontSizePt,
+        fontFace: isHeading ? tokens.typography.headingFont : tokens.typography.bodyFont,
+        color: isHeading ? tokens.colors.secondary : tokens.colors.textPrimary,
+        bold: isHeading,
+      });
+      elemY += isHeading ? 0.6 : 0.75;
+    } else if (elem.type === "list" && "items" in elem) {
+      elem.items.slice(0, 5).forEach((it) => {
+        if (elemY > ctx.slideH - 1.2) return;
+        const textStr = it.subtext ? `${it.text}: ${it.subtext}` : it.text;
+        const fit = calculateTextFitting(textStr, leftW - 0.3, 0.6, 11);
+
+        slide.addText(`•  ${fit.cleanText}`, {
+          x: leftX + 0.1,
+          y: elemY,
+          w: leftW - 0.1,
+          h: 0.5,
+          fontSize: fit.adjustedFontSizePt,
+          fontFace: tokens.typography.bodyFont,
+          color: tokens.colors.textSecondary,
+        });
+        elemY += 0.55;
+      });
+    }
   });
 
-  // Left accent bar
-  slide.addShape("rect", {
-    x: 0,
-    y: 0,
-    w: 0.35,
-    h: ctx.slideH,
-    fill: { color: tokens.colors.secondary },
+  // Right 33% Studio Closing Card (matching PageRenderer)
+  const rightW = availableW * 0.33;
+  const rightX = marginX + leftW + availableW * 0.04;
+  const cardH = ctx.slideH - contentStartY - 0.7;
+
+  slide.addShape("roundRect", {
+    x: rightX,
+    y: contentStartY,
+    w: rightW,
+    h: cardH,
+    fill: { color: tokens.colors.surface },
+    line: { color: tokens.colors.border, width: 1 },
+    rectRadius: tokens.style.borderRadius,
   });
 
-  // Category Badge Pill
-  if (page.badge) {
-    slide.addText(sanitizeBadge(page.badge), {
-      x: 1.2,
-      y: ctx.slideH * 0.22,
-      w: ctx.slideW - 2.4,
-      h: 0.35,
-      fontSize: 10,
-      fontFace: tokens.typography.bodyFont,
-      color: tokens.colors.secondary,
-      bold: true,
-      charSpacing: 2.5,
-    });
-  }
+  // Studio Logo Icon
+  const iconSize = 0.8;
+  const iconX = rightX + (rightW - iconSize) / 2;
+  const iconY = contentStartY + 0.8;
 
-  // Hero Headline — use page title or "Thank You"
-  const headline = page.title || "Thank You";
-  const fitH = calculateTextFitting(headline, ctx.slideW - 2.4, 1.8, 44);
-  slide.addText(fitH.cleanText, {
-    x: 1.2,
-    y: ctx.slideH * 0.28,
-    w: ctx.slideW - 2.4,
-    h: 1.5,
-    fontSize: fitH.adjustedFontSizePt,
+  slide.addShape("roundRect", {
+    x: iconX,
+    y: iconY,
+    w: iconSize,
+    h: iconSize,
+    fill: { color: tokens.colors.secondary, transparency: 85 },
+    line: { color: tokens.colors.secondary, width: 1 },
+    rectRadius: 0.15,
+  });
+
+  slide.addText("SC", {
+    x: iconX,
+    y: iconY,
+    w: iconSize,
+    h: iconSize,
+    fontSize: 16,
+    fontFace: tokens.typography.headingFont,
+    color: tokens.colors.secondary,
+    bold: true,
+    align: "center",
+    valign: "middle",
+  });
+
+  // Studio Name & Brand
+  slide.addText("SLIDECRAFT STUDIO", {
+    x: rightX + 0.2,
+    y: iconY + iconSize + 0.3,
+    w: rightW - 0.4,
+    h: 0.35,
+    fontSize: 12,
     fontFace: tokens.typography.headingFont,
     color: tokens.colors.textPrimary,
     bold: true,
+    align: "center",
   });
 
-  // Subtitle / CTA
-  if (page.subtitle) {
-    const fitS = calculateTextFitting(page.subtitle, ctx.slideW - 2.4, 0.8, 16);
-    slide.addText(fitS.cleanText, {
-      x: 1.2,
-      y: ctx.slideH * 0.48,
-      w: ctx.slideW - 2.4,
-      h: 0.7,
-      fontSize: fitS.adjustedFontSizePt,
-      fontFace: tokens.typography.bodyFont,
-      color: tokens.colors.textSecondary,
+  slide.addText(page.subtitle || page.title || "Executive Briefing", {
+    x: rightX + 0.2,
+    y: iconY + iconSize + 0.7,
+    w: rightW - 0.4,
+    h: 0.6,
+    fontSize: 10,
+    fontFace: tokens.typography.bodyFont,
+    color: tokens.colors.textSecondary,
+    align: "center",
+  });
+
+  // Confidential Pill
+  const pillW = 2.2;
+  const pillX = rightX + (rightW - pillW) / 2;
+  const pillY = contentStartY + cardH - 0.8;
+
+  slide.addShape("roundRect", {
+    x: pillX,
+    y: pillY,
+    w: pillW,
+    h: 0.35,
+    fill: { color: tokens.colors.surface },
+    line: { color: tokens.colors.secondary, width: 1 },
+    rectRadius: 0.15,
+  });
+
+  slide.addText("Confidential & Proprietary", {
+    x: pillX,
+    y: pillY,
+    w: pillW,
+    h: 0.35,
+    fontSize: 9,
+    fontFace: tokens.typography.bodyFont,
+    color: tokens.colors.secondary,
+    align: "center",
+    valign: "middle",
+  });
+}
+
+/**
+ * 17. Poster Slide (Event & Research Posters) - Matches PageRenderer Tiered Layout
+ */
+export function renderPosterSlide(slide: pptxgen.Slide, page: PageSpec, ctx: RenderContext) {
+  const tokens = ctx.tokens;
+  const marginX = tokens.spacing.marginXInches;
+  const availableW = ctx.slideW - marginX * 2;
+
+  // Tier 1: Top Hero Section
+  let curY = 0.5;
+  if (page.badge) {
+    const cleanBadge = sanitizeBadge(page.badge);
+    slide.addText(cleanBadge, {
+      x: marginX,
+      y: curY,
+      w: availableW,
+      h: 0.35,
+      fontSize: 10,
+      fontFace: tokens.typography.headingFont,
+      color: tokens.colors.secondary,
+      bold: true,
+      align: "center",
     });
+    curY += 0.4;
   }
 
-  // Render list/text elements from page
-  const textEls = page.elements.filter((e) => e.type === "text" || e.type === "list").slice(0, 3);
-  let elY = ctx.slideH * 0.6;
-  for (const el of textEls) {
-    if (el.type === "text" && "content" in el) {
-      const fit = calculateTextFitting(el.content, ctx.slideW - 2.4, 0.5, 13);
+  const fitTitle = calculateTextFitting(page.title, availableW, 1.0, 28);
+  slide.addText(fitTitle.cleanText, {
+    x: marginX,
+    y: curY,
+    w: availableW,
+    h: 0.9,
+    fontSize: fitTitle.adjustedFontSizePt,
+    fontFace: tokens.typography.headingFont,
+    color: tokens.colors.textPrimary,
+    bold: true,
+    align: "center",
+  });
+  curY += 0.95;
+
+  if (page.subtitle) {
+    const fitSub = calculateTextFitting(page.subtitle, availableW - 1.0, 0.5, 12);
+    slide.addText(fitSub.cleanText, {
+      x: marginX + 0.5,
+      y: curY,
+      w: availableW - 1.0,
+      h: 0.5,
+      fontSize: fitSub.adjustedFontSizePt,
+      fontFace: tokens.typography.bodyFont,
+      color: tokens.colors.textSecondary,
+      align: "center",
+    });
+    curY += 0.55;
+  }
+
+  // Tier 2: 2-Column Responsive Body Grid
+  const gutter = 0.35;
+  const colW = (availableW - gutter) / 2;
+  const bodyY = curY + 0.2;
+  const footerH = 0.8;
+  const bodyH = Math.max(2.0, ctx.slideH - bodyY - footerH - 0.4);
+
+  // Left column: Event details & general text elements
+  const leftX = marginX;
+  const eventDetails = page.elements.find((e) => e.type === "event_details") as any;
+  const otherTexts = page.elements.filter(
+    (e) =>
+      e.id !== "poster-title" &&
+      e.id !== "poster-subtitle" &&
+      e.type !== "event_details" &&
+      e.type !== "metric" &&
+      e.type !== "speaker_card" &&
+      e.type !== "cta_badge" &&
+      e.type !== "qrcode" &&
+      e.type !== "sponsor_grid" &&
+      e.type !== "organizer_info"
+  );
+
+  let leftY = bodyY;
+  if (eventDetails) {
+    slide.addShape("roundRect", {
+      x: leftX,
+      y: leftY,
+      w: colW,
+      h: 1.8,
+      fill: { color: tokens.colors.surface },
+      line: { color: tokens.colors.border, width: 1 },
+      rectRadius: tokens.style.borderRadius,
+    });
+
+    slide.addText("DATE & TIME", {
+      x: leftX + 0.2,
+      y: leftY + 0.15,
+      w: colW - 0.4,
+      h: 0.25,
+      fontSize: 9,
+      fontFace: tokens.typography.headingFont,
+      color: tokens.colors.secondary,
+      bold: true,
+    });
+    slide.addText(`${eventDetails.date || ""} ${eventDetails.time ? "• " + eventDetails.time : ""}`.trim() || "Event Schedule", {
+      x: leftX + 0.2,
+      y: leftY + 0.4,
+      w: colW - 0.4,
+      h: 0.35,
+      fontSize: 12,
+      fontFace: tokens.typography.headingFont,
+      color: tokens.colors.textPrimary,
+      bold: true,
+    });
+
+    if (eventDetails.location) {
+      slide.addText("LOCATION", {
+        x: leftX + 0.2,
+        y: leftY + 0.85,
+        w: colW - 0.4,
+        h: 0.25,
+        fontSize: 9,
+        fontFace: tokens.typography.headingFont,
+        color: tokens.colors.secondary,
+        bold: true,
+      });
+      slide.addText(eventDetails.location, {
+        x: leftX + 0.2,
+        y: leftY + 1.1,
+        w: colW - 0.4,
+        h: 0.5,
+        fontSize: 11,
+        fontFace: tokens.typography.bodyFont,
+        color: tokens.colors.textPrimary,
+      });
+    }
+    leftY += 2.0;
+  }
+
+  for (const ot of otherTexts.slice(0, 2)) {
+    if (leftY > bodyY + bodyH - 0.5) break;
+    if (ot.type === "text" && "content" in ot) {
+      slide.addShape("roundRect", {
+        x: leftX,
+        y: leftY,
+        w: colW,
+        h: 1.1,
+        fill: { color: tokens.colors.surface },
+        line: { color: tokens.colors.border, width: 1 },
+        rectRadius: tokens.style.borderRadius,
+      });
+      const fit = calculateTextFitting(ot.content, colW - 0.4, 0.8, 11);
       slide.addText(fit.cleanText, {
-        x: 1.2,
-        y: elY,
-        w: ctx.slideW - 2.4,
-        h: 0.45,
+        x: leftX + 0.2,
+        y: leftY + 0.15,
+        w: colW - 0.4,
+        h: 0.8,
         fontSize: fit.adjustedFontSizePt,
         fontFace: tokens.typography.bodyFont,
         color: tokens.colors.textSecondary,
       });
-      elY += 0.5;
+      leftY += 1.25;
     }
   }
 
-  // Footer branding
-  slide.addText("SlideCraft AI Studio  •  Thank you for your time", {
-    x: 1.2,
-    y: ctx.slideH - 0.8,
-    w: 6.0,
-    h: 0.35,
-    fontSize: 10,
-    fontFace: tokens.typography.bodyFont,
-    color: tokens.colors.textSecondary,
+  // Right column: Speaker cards & Metrics & Sponsors
+  const rightX = marginX + colW + gutter;
+  const speakers = page.elements.filter((e) => e.type === "speaker_card") as any[];
+  const metrics = page.elements.filter((e) => e.type === "metric") as any[];
+  let rightY = bodyY;
+
+  if (speakers.length > 0) {
+    slide.addText("FEATURED SPEAKERS", {
+      x: rightX,
+      y: rightY,
+      w: colW,
+      h: 0.3,
+      fontSize: 9,
+      fontFace: tokens.typography.headingFont,
+      color: tokens.colors.secondary,
+      bold: true,
+    });
+    rightY += 0.35;
+
+    speakers.slice(0, 2).forEach((sp) => {
+      slide.addShape("roundRect", {
+        x: rightX,
+        y: rightY,
+        w: colW,
+        h: 0.95,
+        fill: { color: tokens.colors.surface },
+        line: { color: tokens.colors.border, width: 1 },
+        rectRadius: tokens.style.borderRadius,
+      });
+      slide.addText(sp.name || "Distinguished Speaker", {
+        x: rightX + 0.2,
+        y: rightY + 0.15,
+        w: colW - 0.4,
+        h: 0.35,
+        fontSize: 12,
+        fontFace: tokens.typography.headingFont,
+        color: tokens.colors.textPrimary,
+        bold: true,
+      });
+      slide.addText(`${sp.title || ""}${sp.company ? " • " + sp.company : ""}`.trim() || sp.role || "", {
+        x: rightX + 0.2,
+        y: rightY + 0.5,
+        w: colW - 0.4,
+        h: 0.35,
+        fontSize: 10,
+        fontFace: tokens.typography.bodyFont,
+        color: tokens.colors.textSecondary,
+      });
+      rightY += 1.1;
+    });
+  }
+
+  if (metrics.length > 0 && rightY < bodyY + bodyH - 0.6) {
+    const metricW = (colW - 0.2 * (Math.min(metrics.length, 2) - 1)) / Math.min(metrics.length, 2);
+    metrics.slice(0, 2).forEach((m, idx) => {
+      const mx = rightX + idx * (metricW + 0.2);
+      slide.addShape("roundRect", {
+        x: mx,
+        y: rightY,
+        w: metricW,
+        h: 1.1,
+        fill: { color: tokens.colors.surface },
+        line: { color: tokens.colors.border, width: 1 },
+        rectRadius: tokens.style.borderRadius,
+      });
+      slide.addText(m.value, {
+        x: mx + 0.1,
+        y: rightY + 0.15,
+        w: metricW - 0.2,
+        h: 0.45,
+        fontSize: 20,
+        fontFace: tokens.typography.headingFont,
+        color: tokens.colors.secondary,
+        bold: true,
+        align: "center",
+      });
+      slide.addText(m.label, {
+        x: mx + 0.1,
+        y: rightY + 0.6,
+        w: metricW - 0.2,
+        h: 0.4,
+        fontSize: 9,
+        fontFace: tokens.typography.bodyFont,
+        color: tokens.colors.textSecondary,
+        align: "center",
+      });
+    });
+  }
+
+  // Tier 3: Bottom Action Row
+  const footerY = ctx.slideH - footerH - 0.3;
+  slide.addShape("roundRect", {
+    x: marginX,
+    y: footerY,
+    w: availableW,
+    h: footerH,
+    fill: { color: tokens.colors.surface },
+    line: { color: tokens.colors.border, width: 1 },
+    rectRadius: tokens.style.borderRadius,
   });
+
+  const cta = page.elements.find((e) => e.type === "cta_badge") as any;
+  const organizer = page.elements.find((e) => e.type === "organizer_info") as any;
+
+  if (cta) {
+    slide.addShape("roundRect", {
+      x: marginX + 0.3,
+      y: footerY + 0.2,
+      w: 2.2,
+      h: 0.4,
+      fill: { color: tokens.colors.secondary },
+      rectRadius: 0.1,
+    });
+    slide.addText(cta.text || cta.label || "Register Now", {
+      x: marginX + 0.3,
+      y: footerY + 0.2,
+      w: 2.2,
+      h: 0.4,
+      fontSize: 11,
+      fontFace: tokens.typography.headingFont,
+      color: "FFFFFF",
+      bold: true,
+      align: "center",
+      valign: "middle",
+    });
+  }
+
+  if (organizer) {
+    slide.addText(`Organized by: ${organizer.name || "Host Organization"}`, {
+      x: marginX + 2.8,
+      y: footerY + 0.2,
+      w: availableW - 3.2,
+      h: 0.4,
+      fontSize: 10,
+      fontFace: tokens.typography.bodyFont,
+      color: tokens.colors.textSecondary,
+      valign: "middle",
+    });
+  }
 }
 
 /**
@@ -1520,29 +2394,68 @@ export function renderMediaElement(
 ) {
   if (elem.type !== "media") return;
   const src = elem.src || elem.url;
-  if (src && (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:image/"))) {
+
+  if (src) {
     try {
-      if (src.startsWith("data:")) {
-        slide.addImage({ data: src, x, y, w, h });
-      } else {
+      if (src.startsWith("data:image/svg+xml;utf8,") || src.startsWith("data:image/svg+xml;charset=utf-8,")) {
+        const rawSvg = decodeURIComponent(src.replace(/^data:image\/svg\+xml;[^,]+,/, ""));
+        const b64 =
+          typeof Buffer !== "undefined"
+            ? Buffer.from(rawSvg).toString("base64")
+            : btoa(unescape(encodeURIComponent(rawSvg)));
+        slide.addImage({ data: `image/svg+xml;base64,${b64}`, x, y, w, h });
+        return;
+      } else if (src.startsWith("data:image/svg+xml;base64,") || src.startsWith("image/svg+xml;base64,")) {
+        const cleanData = src.startsWith("data:") ? src.replace(/^data:/, "") : src;
+        slide.addImage({ data: cleanData, x, y, w, h });
+        return;
+      } else if (src.startsWith("data:image/")) {
+        const cleanData = src.startsWith("data:") ? src.replace(/^data:/, "") : src;
+        slide.addImage({ data: cleanData, x, y, w, h });
+        return;
+      } else if (src.startsWith("<svg")) {
+        const b64 =
+          typeof Buffer !== "undefined"
+            ? Buffer.from(src).toString("base64")
+            : btoa(unescape(encodeURIComponent(src)));
+        slide.addImage({ data: `image/svg+xml;base64,${b64}`, x, y, w, h });
+        return;
+      } else if (src.startsWith("http://") || src.startsWith("https://")) {
         slide.addImage({ path: src, x, y, w, h });
+        return;
       }
-      return;
-    } catch {
-      // Fallback if image load fails
+    } catch (imgErr) {
+      console.warn("[renderMediaElement] image add failed, falling back to vector card container:", imgErr);
     }
   }
 
-  // Draw styled media placeholder box
+  // Draw styled media placeholder box matching PageRenderer surface card
   slide.addShape("roundRect", {
-    x, y, w, h,
+    x,
+    y,
+    w,
+    h,
     fill: { color: ctx.tokens.colors.surface },
-    line: { color: ctx.tokens.colors.border, width: 1, dashType: "dash" },
-    rectRadius: 0.1,
+    line: { color: ctx.tokens.colors.border, width: 1 },
+    rectRadius: ctx.tokens.style.borderRadius,
   });
+
+  const minDim = Math.min(w, h);
+  slide.addShape("ellipse", {
+    x: x + (w - minDim * 0.45) / 2,
+    y: y + (h - minDim * 0.45) / 2,
+    w: minDim * 0.45,
+    h: minDim * 0.45,
+    fill: { color: ctx.tokens.colors.background },
+    line: { color: ctx.tokens.colors.secondary, width: 1.5 },
+  });
+
   slide.addText(elem.alt || "Visual Asset", {
-    x, y, w, h,
-    fontSize: 11,
+    x: x + 0.2,
+    y: y + h - 0.7,
+    w: w - 0.4,
+    h: 0.5,
+    fontSize: 10,
     fontFace: ctx.tokens.typography.bodyFont,
     color: ctx.tokens.colors.textSecondary,
     align: "center",

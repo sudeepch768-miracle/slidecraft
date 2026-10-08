@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, RefreshCw, Check, Sparkles, Sliders, Palette, Layers } from "lucide-react";
+import { X, RefreshCw, Check, Sparkles, Sliders, Palette, Layers, Undo2 } from "lucide-react";
 import { VisualDirection } from "@/types/visual-direction";
 import {
   generateVisualDirection,
+  generatePromptThemedBackground,
   visualDirectionToThemeSpec,
   createSlideBackgroundFromVisualDirection,
 } from "@/lib/ai/visual-direction-engine";
@@ -26,25 +27,37 @@ export const RegenerateBackgroundModal: React.FC<RegenerateBackgroundModalProps>
 }) => {
   const { document, updateDocument, activePageIndex, projectId } = useEditorStore();
   const [candidate, setCandidate] = useState<VisualDirection | null>(null);
+  const [candidatesHistory, setCandidatesHistory] = useState<VisualDirection[]>([]);
+  const [candidateHistoryIndex, setCandidateHistoryIndex] = useState(-1);
   const [reuseForFuture, setReuseForFuture] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const generateCandidate = useCallback(() => {
     setIsGenerating(true);
     try {
-      const newVd = generateVisualDirection(
-        document.meta.title || "Professional Presentation",
-        {
-          seed: `manual-regen-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        }
-      );
+      const topic = document.meta.title || document.meta.description || "Professional Presentation";
+      const newVd = generatePromptThemedBackground(topic);
+      setCandidatesHistory((prev) => {
+        const next = candidateHistoryIndex >= 0 ? prev.slice(0, candidateHistoryIndex + 1) : [];
+        next.push(newVd);
+        return next;
+      });
+      setCandidateHistoryIndex((prev) => prev + 1);
       setCandidate(newVd);
     } catch (err) {
       console.warn("Failed to generate candidate style:", err);
     } finally {
       setIsGenerating(false);
     }
-  }, [document.meta.title]);
+  }, [document.meta.title, document.meta.description, candidateHistoryIndex]);
+
+  const handlePreviousCandidate = () => {
+    if (candidateHistoryIndex > 0) {
+      const prevIdx = candidateHistoryIndex - 1;
+      setCandidateHistoryIndex(prevIdx);
+      setCandidate(candidatesHistory[prevIdx]);
+    }
+  };
 
   // Check if a preferred style was already saved
   useEffect(() => {
@@ -255,15 +268,28 @@ export const RegenerateBackgroundModal: React.FC<RegenerateBackgroundModalProps>
 
           {/* Action Buttons */}
           <div className="flex items-center justify-between px-6 py-4 border-t border-border/60 bg-muted/30">
-            <button
-              type="button"
-              onClick={generateCandidate}
-              disabled={isGenerating}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border hover:bg-muted text-foreground text-xs font-semibold transition-all disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? "animate-spin" : ""}`} />
-              Try Another Style
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handlePreviousCandidate}
+                disabled={candidateHistoryIndex <= 0 || isGenerating}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border hover:bg-muted text-foreground text-xs font-semibold transition-all disabled:opacity-40"
+                title="Go back to previous background theme"
+              >
+                <Undo2 className="w-3.5 h-3.5" />
+                Previous Style
+              </button>
+
+              <button
+                type="button"
+                onClick={generateCandidate}
+                disabled={isGenerating}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? "animate-spin" : ""}`} />
+                Try Another Style
+              </button>
+            </div>
 
             <div className="flex items-center gap-2">
               <button

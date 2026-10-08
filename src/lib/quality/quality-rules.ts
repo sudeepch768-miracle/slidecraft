@@ -167,8 +167,23 @@ export function checkBoundaryViolations(doc: DocumentSpec): QualityIssue[] {
       if (pos && typeof pos.x === "number" && typeof pos.y === "number") {
         const w = pos.width || 0;
         const h = pos.height || 0;
+        const isPercent = pos.x <= 100 && w <= 100;
+        const minMargin = isPercent ? 1.5 : minSafeMarginPx;
+        const maxW = isPercent ? 100 : doc.canvas.width;
+        const maxH = isPercent ? 100 : doc.canvas.height;
 
-        if (pos.x < minSafeMarginPx || pos.y < minSafeMarginPx) {
+        if (pos.x < 0 || pos.y < 0) {
+          issues.push({
+            code: "boundary_violation",
+            category: "spacing",
+            severity: "warning",
+            message: `Element '${el.id}' on slide ${pIdx + 1} is placed outside the canvas boundary.`,
+            pageIndex: pIdx,
+            elementId: el.id,
+            fixable: true,
+            suggestion: `Clamp coordinate inside bounds.`,
+          });
+        } else if (!isPercent && (pos.x < minMargin || pos.y < minMargin)) {
           issues.push({
             code: "boundary_violation",
             category: "spacing",
@@ -181,7 +196,7 @@ export function checkBoundaryViolations(doc: DocumentSpec): QualityIssue[] {
           });
         }
 
-        if (pos.x + w > doc.canvas.width - minSafeMarginPx || pos.y + h > doc.canvas.height - minSafeMarginPx) {
+        if (pos.x + w > maxW || pos.y + h > maxH) {
           issues.push({
             code: "boundary_violation",
             category: "spacing",

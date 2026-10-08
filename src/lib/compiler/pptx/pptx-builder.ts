@@ -1,5 +1,5 @@
 import pptxgen from "pptxgenjs";
-import { DocumentSpec, DesignStyle } from "@/types/document-spec";
+import { DocumentSpec, DesignStyle, MediaElement } from "@/types/document-spec";
 import { PPTX_DIMENSIONS } from "@/lib/layout-engine/grid-calculator";
 import { resolvePptxDesignTokens } from "./design-tokens";
 import { visualDirectionTracer } from "@/lib/ai/visual-direction-tracer";
@@ -21,6 +21,8 @@ import {
   renderSectionDivider,
   renderSummary,
   renderClosingSlide,
+  renderPosterSlide,
+  renderMediaElement,
 } from "./layout-renderers";
 
 export interface PptxCompileOptions {
@@ -101,15 +103,16 @@ export async function compileDocumentToPptx(
       decorativeShapes: visualDirection.decorativeShapes,
     } : undefined);
 
-    const slideBg = bgSpec?.gradient?.stops?.[0]?.color
+    const explicitBg = page.backgroundOverride || (page.background?.type === "solid" ? page.background.value : undefined);
+    const slideBg = explicitBg
+      ? explicitBg.replace(/^#/, "")
+      : bgSpec?.gradient?.stops?.[0]?.color
       ? bgSpec.gradient.stops[0].color.replace(/^#/, "")
-      : page.backgroundOverride
-      ? page.backgroundOverride.replace(/^#/, "")
       : tokens.colors.background;
     slide.background = { color: slideBg };
 
     // Dynamic Gradient Simulation (Secondary Translucent Rect Wash)
-    if (bgSpec?.gradient?.stops && bgSpec.gradient.stops.length > 1) {
+    if (!explicitBg && bgSpec?.gradient?.stops && bgSpec.gradient.stops.length > 1) {
       const stop2Hex = bgSpec.gradient.stops[1].color.replace(/^#/, "");
       try {
         slide.addShape("rect", {
@@ -274,7 +277,7 @@ export async function compileDocumentToPptx(
     }
 
     // Archetype-Specific Layout Dispatch
-    const archetype = page.archetype;
+    const archetype = page.archetype as string;
     switch (archetype) {
       case "hero_title":
         renderTitleSlide(slide, page, ctx);
@@ -357,10 +360,33 @@ export async function compileDocumentToPptx(
         renderClosingSlide(slide, page, ctx);
         break;
 
-      default:
-        // Default to standard Title and Content
-        renderTitleAndContent(slide, page, ctx);
+      case "event_poster":
+      case "creative_poster":
+      case "research_poster":
+      case "poster":
+        renderPosterSlide(slide, page, ctx);
         break;
+
+      default:
+        if (archetype && archetype.includes("poster")) {
+          renderPosterSlide(slide, page, ctx);
+        } else {
+          renderTitleAndContent(slide, page, ctx);
+        }
+        break;
+    }
+
+    // 5. Render any explicitly positioned freeform media elements at exact coordinates
+    const positionedMedia = (page.elements || []).filter(
+      (e): e is MediaElement => e.type === "media" && Boolean(e.position && typeof e.position.x === "number")
+    );
+    for (const pMedia of positionedMedia) {
+      const pos = pMedia.position!;
+      const x = ((pos.x ?? 0) / 100) * ctx.slideW;
+      const y = ((pos.y ?? 0) / 100) * ctx.slideH;
+      const w = Math.max(0.5, ((pos.width ?? 40) / 100) * ctx.slideW);
+      const h = Math.max(0.5, ((pos.height ?? 40) / 100) * ctx.slideH);
+      renderMediaElement(slide, pMedia, x, y, w, h, ctx);
     }
   }
 

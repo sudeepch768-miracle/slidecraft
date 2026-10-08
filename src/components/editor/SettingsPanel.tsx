@@ -161,6 +161,9 @@ export const SettingsPanel: React.FC = () => {
     setQualityModalOpen,
     addElementToActivePage,
     deleteElementFromActivePage,
+    randomizeThemeBackground,
+    previousThemeBackground,
+    canUndoTheme,
   } = useEditorStore();
 
   const [aiPrompt, setAiPrompt] = useState("");
@@ -460,10 +463,13 @@ export const SettingsPanel: React.FC = () => {
                         type: "media",
                         id: `media-${Date.now()}`,
                         mediaType: "image",
-                        src: "",
+                        src: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80",
+                        url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80",
                         alt: "Visual illustration",
+                        caption: "Visual illustration",
                         fit: "cover",
-                        borderRadius: 8,
+                        borderRadius: 12,
+                        position: { x: 50, y: 22, width: 42, height: 50 },
                       })
                     }
                     className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-border/80 bg-muted/30 hover:bg-muted text-[11px] font-medium text-foreground transition-colors"
@@ -639,6 +645,48 @@ export const SettingsPanel: React.FC = () => {
                 </button>
               </div>
             )}
+
+            {/* Prompt-Aware Theme Background Generator */}
+            <div className="p-3.5 rounded-2xl border border-primary/30 bg-primary/5 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                  <Sparkles className="w-3.5 h-3.5 text-primary" />
+                  <span>Theme Background Generator</span>
+                </div>
+                {document.visualDirection && (
+                  <span className="text-[10px] font-mono text-primary bg-primary/10 px-2 py-0.5 rounded-full capitalize">
+                    {document.visualDirection.styleFamily.replace(/_/g, " ")}
+                  </span>
+                )}
+              </div>
+
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Generates randomized procedural color harmonies and ambient lighting tailored to your topic.
+              </p>
+
+              <div className="grid grid-cols-2 gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => randomizeThemeBackground()}
+                  className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-sm hover:opacity-95 transition-all"
+                  title="Generate randomized theme background for prompt"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Randomize</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={previousThemeBackground}
+                  disabled={!canUndoTheme}
+                  className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border border-border bg-background text-foreground text-xs font-semibold hover:bg-muted transition-all disabled:opacity-40"
+                  title="Return to previous theme background"
+                >
+                  <Undo2 className="w-3.5 h-3.5" />
+                  <span>Prev Theme</span>
+                </button>
+              </div>
+            </div>
 
             {/* Brand Kits & Themes */}
             <div className="space-y-3">

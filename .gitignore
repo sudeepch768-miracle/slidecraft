@@ -68,4 +68,5 @@ Thumbs.db
 SlideCraft_AI_Project_Documentation.docx
 /scripts/doc_content/
 /scripts/generate_sits_documentation.js
-
+# ---- Local Scripts / Environment --------------------------------------------
+scripts/*.bat

@@ -91,34 +91,36 @@ export function repairBoundariesAndMargins(doc: DocumentSpec): AutoRepairAction[
       if (pos && typeof pos.x === "number" && typeof pos.y === "number") {
         let changed = false;
 
-        // Left & Top Margin clamping:
-        // If coordinate is negative, clamp to 0; if inside safe margin, clamp to minSafeMarginPx
+        const isPercent = pos.x <= 100 && (pos.width || 0) <= 100;
+        const minMargin = isPercent ? 1.5 : minSafeMarginPx;
+        const maxCanvasW = isPercent ? 100 : doc.canvas.width;
+        const maxCanvasH = isPercent ? 100 : doc.canvas.height;
+
         if (pos.x < 0) {
           pos.x = 0;
           changed = true;
-        } else if (pos.x < minSafeMarginPx) {
-          pos.x = minSafeMarginPx;
+        } else if (!isPercent && pos.x < minMargin) {
+          pos.x = minMargin;
           changed = true;
         }
 
         if (pos.y < 0) {
           pos.y = 0;
           changed = true;
-        } else if (pos.y < minSafeMarginPx) {
-          pos.y = minSafeMarginPx;
+        } else if (!isPercent && pos.y < minMargin) {
+          pos.y = minMargin;
           changed = true;
         }
 
-        // Right & Bottom Margin clamping
-        const maxW = doc.canvas.width - minSafeMarginPx - pos.x;
-        const maxH = doc.canvas.height - minSafeMarginPx - pos.y;
+        const maxW = maxCanvasW - pos.x;
+        const maxH = maxCanvasH - pos.y;
 
         if (pos.width && pos.width > maxW) {
-          pos.width = Math.max(120, maxW);
+          pos.width = isPercent ? Math.max(10, maxW) : Math.max(120, maxW);
           changed = true;
         }
         if (pos.height && pos.height > maxH) {
-          pos.height = Math.max(80, maxH);
+          pos.height = isPercent ? Math.max(10, maxH) : Math.max(80, maxH);
           changed = true;
         }
 

@@ -1,7 +1,21 @@
-import { DocumentSpec, ContentElement, GeneratedDesignSystem, PageBackground } from "./document-spec";
+import { DocumentSpec, ContentElement, GeneratedDesignSystem, PageBackground, ThemeSpec, BackgroundSpec } from "./document-spec";
+import { VisualDirection } from "./visual-direction";
 import { ComprehensiveQualityReport } from "@/lib/quality/quality-types";
 
 export type EditorTool = "select" | "text" | "metric" | "chart" | "diagram" | "table" | "shape";
+
+export interface ThemeHistoryEntry {
+  id?: string;
+  timestamp?: number;
+  description?: string;
+  theme: ThemeSpec;
+  visualDirection?: VisualDirection;
+  pageBackgrounds: Array<{
+    pageId: string;
+    backgroundSpec?: BackgroundSpec;
+    backgroundOverride?: string;
+  }>;
+}
 
 export interface EditorState {
   // Document state
@@ -35,6 +49,12 @@ export interface EditorState {
   // Undo / Redo history
   history: DocumentSpec[];
   historyIndex: number;
+
+  // Dedicated Theme & Background History Stack
+  themeHistory: ThemeHistoryEntry[];
+  themeHistoryIndex: number;
+  canUndoTheme: boolean;
+  canRedoTheme: boolean;
 
   // Project & Persistence state
   projectId: string | null;
@@ -77,9 +97,16 @@ export interface EditorState {
   updateElement: (elementId: string, patch: Partial<ContentElement>) => void;
   addElementToActivePage: (element: ContentElement) => void;
   deleteElementFromActivePage: (elementId: string) => void;
+  bringElementForward: (elementId: string) => void;
+  sendElementBackward: (elementId: string) => void;
   addPage: (archetype?: string) => void;
   deletePage: (index: number) => void;
   reorderPages: (fromIndex: number, toIndex: number) => void;
+
+  // Dedicated Theme Background Actions
+  randomizeThemeBackground: (prompt?: string) => void;
+  previousThemeBackground: () => void;
+  nextThemeBackground: () => void;
 
   // Undo / Redo
   undo: () => void;

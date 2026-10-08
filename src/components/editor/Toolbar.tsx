@@ -63,6 +63,11 @@ export const Toolbar: React.FC = () => {
     setRegenerateOpen,
     qualityReport,
     setQualityModalOpen,
+    randomizeThemeBackground,
+    previousThemeBackground,
+    nextThemeBackground,
+    canUndoTheme,
+    canRedoTheme,
   } = useEditorStore();
 
   const [isExporting, setIsExporting] = useState(false);
@@ -561,6 +566,40 @@ export const Toolbar: React.FC = () => {
           <span className="font-bold">{qualityReport ? `${qualityReport.overallScore}%` : "Quality"}</span>
           <span className="hidden md:inline text-[11px] font-medium opacity-80">Quality</span>
         </button>
+
+        {/* Prompt-Aware Theme Background Randomizer with Previous/Next Navigation */}
+        <div className="flex items-center bg-muted/50 p-0.5 rounded-xl border border-border/80">
+          <button
+            type="button"
+            onClick={previousThemeBackground}
+            disabled={!canUndoTheme}
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 disabled:opacity-30 transition-all"
+            title="Previous Background Theme"
+          >
+            <Undo2 className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => randomizeThemeBackground()}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-background/80 text-xs font-semibold text-foreground transition-all"
+            title="Randomize Background Theme for Prompt"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
+            <span className="hidden sm:inline">Theme</span>
+          </button>
+
+          {canRedoTheme && (
+            <button
+              type="button"
+              onClick={nextThemeBackground}
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-all"
+              title="Next Background Theme"
+            >
+              <Redo2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
 
         {/* Regenerate Button */}
         <button

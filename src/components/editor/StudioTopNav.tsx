@@ -8,9 +8,10 @@ import { useEditorStore } from "@/store/editor-store";
 import { projectService } from "@/lib/projects/project-service";
 import { compileDocumentToPptx } from "@/lib/compiler/pptx/pptx-builder";
 import { compileDocumentToDocxBlob } from "@/lib/compiler/docx/docx-builder";
-import { AspectRatio, CANVAS_PRESETS, LayoutArchetype, DARK_THEME, DEFAULT_THEME, ContentElement } from "@/types/document-spec";
+import { AspectRatio, CANVAS_PRESETS, LayoutArchetype, DARK_THEME, DEFAULT_THEME, ContentElement, MediaElement } from "@/types/document-spec";
 import { PRESET_BRAND_KITS } from "@/types/brand-kit";
 import { RegenerateBackgroundModal } from "./RegenerateBackgroundModal";
+import { MediaElementCustomizer } from "./MediaElementCustomizer";
 import { toPng, toJpeg } from "html-to-image";
 import {
   Sparkles,
@@ -88,6 +89,9 @@ export const StudioTopNav: React.FC = () => {
     redo,
     canUndo,
     canRedo,
+    previousThemeBackground,
+    randomizeThemeBackground,
+    canUndoTheme,
   } = useEditorStore();
 
   const [activeDrawer, setActiveDrawer] = useState<StudioDrawerType>(null);
@@ -146,11 +150,15 @@ export const StudioTopNav: React.FC = () => {
       id: `media-${Date.now()}`,
       mediaType: "image",
       url: img.url,
+      src: img.url,
       caption: img.alt || "Presentation Image",
+      alt: img.alt || "Presentation Image",
       fit: "cover",
+      borderRadius: 12,
+      position: { x: 50, y: 22, width: 42, height: 50 },
     };
     addElementToActivePage(newElement);
-    setActiveDrawer(null);
+    setActiveDrawer("customize");
   };
 
   // Export handlers
@@ -350,6 +358,19 @@ export const StudioTopNav: React.FC = () => {
             <Palette className="w-3.5 h-3.5" />
             <span>Theme</span>
           </button>
+
+          {/* Quick Previous Background Theme Button */}
+          {canUndoTheme && (
+            <button
+              type="button"
+              onClick={previousThemeBackground}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+              title="Return to previous background theme"
+            >
+              <Undo2 className="w-3.5 h-3.5" />
+              <span className="hidden md:inline text-[11px]">Prev Theme</span>
+            </button>
+          )}
 
           {/* Dynamic Background Regeneration Trigger */}
           <button
@@ -860,6 +881,23 @@ export const StudioTopNav: React.FC = () => {
                             venue: "Grand Auditorium Hall",
                           }),
                       },
+                      {
+                        label: "Image / Visual",
+                        icon: ImageIcon,
+                        action: () =>
+                          addElementToActivePage({
+                            type: "media",
+                            id: `media-${Date.now()}`,
+                            mediaType: "image",
+                            url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80",
+                            src: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80",
+                            caption: "Visual Concept",
+                            alt: "Visual Concept",
+                            fit: "cover",
+                            borderRadius: 12,
+                            position: { x: 50, y: 22, width: 42, height: 50 },
+                          }),
+                      },
                     ].map((item, i) => {
                       const ItemIcon = item.icon;
                       return (
@@ -896,11 +934,15 @@ export const StudioTopNav: React.FC = () => {
                       id: `flux-${Date.now()}`,
                       mediaType: "image",
                       url,
+                      src: url,
                       caption: "AI-Generated Image",
+                      alt: "AI-Generated Image",
                       fit: "cover",
+                      borderRadius: 12,
+                      position: { x: 50, y: 22, width: 42, height: 50 },
                     };
                     addElementToActivePage(newElement);
-                    setActiveDrawer(null);
+                    setActiveDrawer("customize");
                   }}
                   documentFormat={document.documentType ?? "presentation"}
                   projectId={projectId ?? undefined}
@@ -961,6 +1003,13 @@ export const StudioTopNav: React.FC = () => {
                             />
                           </div>
                         </div>
+                      )}
+
+                      {selectedElement.type === "media" && (
+                        <MediaElementCustomizer
+                          element={selectedElement as MediaElement}
+                          onClose={() => setActiveDrawer(null)}
+                        />
                       )}
                     </div>
                   ) : (

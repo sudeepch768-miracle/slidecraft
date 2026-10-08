@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { PageSpec, ThemeSpec, ContentElement, AspectRatio, DocumentType } from "@/types/document-spec";
+import { PageSpec, ThemeSpec, ContentElement, AspectRatio, DocumentType, MediaElement } from "@/types/document-spec";
+import { useEditorStore } from "@/store/editor-store";
 import { TextBlock } from "./Elements/TextBlock";
 import { MetricCard } from "./Elements/MetricCard";
 import { ChartBlock } from "./Elements/ChartBlock";
@@ -64,6 +65,7 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
   projectId,
   documentId,
 }) => {
+  const containerRef = React.useRef<HTMLDivElement>(null);
   const bg = page.backgroundOverride || theme.colors.background;
   const displayBadge = sanitizeBadge(page.badge, page.pageNumber === 1 ? "EXECUTIVE BRIEFING" : undefined);
 
@@ -106,6 +108,10 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
 
   // Render individual element dispatcher
   const renderElement = (element: ContentElement) => {
+    // If it's a positioned media element, it is rendered in the top-level freeform layer, so skip inline rendering
+    if (element.type === "media" && element.position && typeof element.position.x === "number") {
+      return null;
+    }
     const isSelected = selectedElementId === element.id;
 
     switch (element.type) {
@@ -299,7 +305,22 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
             theme={theme}
             isSelected={isSelected}
             onSelect={() => onSelectElement?.(element.id)}
+            onUpdate={(patch) => onUpdateElement?.(element.id, patch)}
+            onDelete={() => {
+              const store = useEditorStore.getState();
+              store.deleteElementFromActivePage(element.id);
+            }}
+            onBringForward={() => {
+              const store = useEditorStore.getState();
+              store.bringElementForward(element.id);
+            }}
+            onSendBackward={() => {
+              const store = useEditorStore.getState();
+              store.sendElementBackward(element.id);
+            }}
             slideId={page.id}
+            slideContainerRef={containerRef}
+            isFreeform={false}
           />
         );
       default:
@@ -395,8 +416,14 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
       e.type !== "organizer_info"
   );
 
-  // Presentation & Common element groupings
-  const mediaElement = page.elements.find((e) => e.type === "media");
+  // Track positioned media elements (freeform absolute overlays) vs layout slot elements
+  const positionedMediaElements = page.elements.filter(
+    (e): e is MediaElement => e.type === "media" && Boolean(e.position && typeof e.position.x === "number")
+  );
+  const positionedMediaIds = new Set(positionedMediaElements.map((e) => e.id));
+
+  // Presentation & Common element groupings (ignoring positioned freeform media elements)
+  const mediaElement = page.elements.find((e) => e.type === "media" && !positionedMediaIds.has(e.id));
   const chartElement = page.elements.find((e) => e.type === "chart");
   const listElement = page.elements.find((e) => e.type === "list");
   const quoteElement = page.elements.find(
@@ -405,7 +432,7 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
   );
 
   const nonHeaderElements = page.elements.filter(
-    (e) => e.id !== "poster-title" && e.id !== "poster-subtitle"
+    (e) => e.id !== "poster-title" && e.id !== "poster-subtitle" && !positionedMediaIds.has(e.id)
   );
   const third = Math.max(1, Math.ceil(nonHeaderElements.length / 3));
   const col1Elements = nonHeaderElements.slice(0, third);
@@ -413,7 +440,6 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
   const col3Elements = nonHeaderElements.slice(third * 2);
 
   // Auto-fit containment: detect if content scrollHeight exceeds available height, scale cleanly
-  const containerRef = React.useRef<HTMLDivElement>(null);
   const contentRef = React.useRef<HTMLDivElement>(null);
   const [contentScale, setContentScale] = React.useState<number>(1);
 
@@ -1361,6 +1387,36 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
           </div>
         </div>
       )}
+      </div>
+
+      {/* Freeform Movable & Resizable Elements Layer */}
+      <div className="absolute inset-0 pointer-events-none z-30 overflow-visible">
+        {positionedMediaElements.map((element) => (
+          <div key={element.id} className="pointer-events-auto">
+            <MediaBlock
+              element={element}
+              theme={theme}
+              isSelected={selectedElementId === element.id}
+              onSelect={() => onSelectElement?.(element.id)}
+              onUpdate={(patch) => onUpdateElement?.(element.id, patch)}
+              onDelete={() => {
+                const store = useEditorStore.getState();
+                store.deleteElementFromActivePage(element.id);
+              }}
+              onBringForward={() => {
+                const store = useEditorStore.getState();
+                store.bringElementForward(element.id);
+              }}
+              onSendBackward={() => {
+                const store = useEditorStore.getState();
+                store.sendElementBackward(element.id);
+              }}
+              slideId={page.id}
+              slideContainerRef={containerRef}
+              isFreeform={true}
+            />
+          </div>
+        ))}
       </div>
     </div>
   );

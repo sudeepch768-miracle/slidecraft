@@ -10,7 +10,12 @@ import {
 } from "@/types/planner";
 import { validatePresentationPlan } from "@/lib/ai/content-planner";
 import { compilePlanToDocumentSpec } from "@/lib/ai/plan-to-slides";
-import { generateVisualDirection, visualDirectionToThemeSpec } from "@/lib/ai/visual-direction-engine";
+import {
+  generateVisualDirection,
+  generatePromptThemedBackground,
+  visualDirectionToThemeSpec,
+} from "@/lib/ai/visual-direction-engine";
+import { VisualDirection } from "@/types/visual-direction";
 import { projectService } from "@/lib/projects/project-service";
 import { useEditorStore } from "@/store/editor-store";
 import { PlannerToolbar } from "./PlannerToolbar";
@@ -77,12 +82,22 @@ export const PresentationPlanner: React.FC<PresentationPlannerProps> = ({
   const [history, setHistory] = useState<PresentationPlan[]>([normalizedInitial]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
+  // Dedicated Visual Direction History for Stepping Back & Forward through Randomized Themes
+  const [vdHistory, setVdHistory] = useState<VisualDirection[]>(() =>
+    normalizedInitial.visualDirection ? [normalizedInitial.visualDirection] : []
+  );
+  const [vdHistoryIndex, setVdHistoryIndex] = useState<number>(0);
+
   // Synchronize state when initialPlan changes (or when remounted with new key)
   useEffect(() => {
     setPlan(normalizedInitial);
     setActiveSlideId(normalizedInitial.slidePlans[0]?.id || `slide-1`);
     setHistory([normalizedInitial]);
     setHistoryIndex(0);
+    if (normalizedInitial.visualDirection) {
+      setVdHistory([normalizedInitial.visualDirection]);
+      setVdHistoryIndex(0);
+    }
   }, [normalizedInitial]);
 
   const handleStartNewPresentation = useCallback(() => {
@@ -470,15 +485,33 @@ export const PresentationPlanner: React.FC<PresentationPlannerProps> = ({
     });
   };
 
-  // Re-roll Visual Style Direction
+  // Re-roll Visual Style Direction (Prompt-Aware Procedural Randomization)
   const handleRerollVisualDirection = () => {
-    const newVd = generateVisualDirection(plan.topic || plan.title || "Presentation", {
+    const newVd = generatePromptThemedBackground(plan.topic || plan.title || "Presentation", {
       seed: `planner-reroll-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
     });
+    setVdHistory((prev) => {
+      const truncated = prev.slice(0, vdHistoryIndex + 1);
+      return [...truncated, newVd];
+    });
+    setVdHistoryIndex((prev) => prev + 1);
     updatePlanWithHistory({
       ...plan,
       visualDirection: newVd,
     });
+  };
+
+  // Step Back to Previous Visual Direction Theme
+  const handlePreviousVisualDirection = () => {
+    if (vdHistoryIndex > 0) {
+      const prevIdx = vdHistoryIndex - 1;
+      const prevVd = vdHistory[prevIdx];
+      setVdHistoryIndex(prevIdx);
+      updatePlanWithHistory({
+        ...plan,
+        visualDirection: prevVd,
+      });
+    }
   };
 
   const effectiveTheme = plan.visualDirection
@@ -905,13 +938,26 @@ export const PresentationPlanner: React.FC<PresentationPlannerProps> = ({
                   Experience the exact atmospheric colors, card glassmorphism, and framing generated for this deck.
                 </p>
               </div>
-              <button
-                onClick={handleRerollVisualDirection}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-semibold transition-colors shrink-0"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Re-roll Visual Style Direction</span>
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handlePreviousVisualDirection}
+                  disabled={vdHistoryIndex <= 0}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted/70 text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Go back to the previous background theme"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Previous Theme</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRerollVisualDirection}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-semibold transition-colors"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Re-roll Visual Style Direction</span>
+                </button>
+              </div>
             </div>
 
             {/* Visual Direction Specification Card */}

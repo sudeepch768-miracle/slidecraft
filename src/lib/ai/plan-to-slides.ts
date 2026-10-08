@@ -1185,7 +1185,7 @@ export function compilePlanToDocumentSpec(
           : sanitizeBadge(
               `${String(slide.slideNumber).padStart(2, "0")} / ${archetype.replace(/_/g, " ").toUpperCase()}`
             ),
-      backgroundOverride: theme.colors.background,
+      backgroundOverride: (slide as any).backgroundOverride || undefined,
       backgroundSpec,
       notes: slide.speakerNotes || undefined,
       elements,

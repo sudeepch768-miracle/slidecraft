@@ -278,23 +278,56 @@ export async function generateImage(
   }
 
   // 5. Extract image bytes from artifacts[0].base64
-  const artifact = responseJson.artifacts?.[0];
-  const finishReason = artifact?.finishReason || artifact?.finish_reason;
+  let artifact = responseJson.artifacts?.[0];
+  let finishReason = artifact?.finishReason || artifact?.finish_reason;
 
-  if (finishReason === "CONTENT_FILTERED") {
-    return buildError(
-      "INVALID_PROMPT",
-      "The prompt was filtered by NVIDIA safety policies. Please rephrase or use different wording.",
-      false
-    );
+  // If NVIDIA safety filter triggered, retry once with a safe, neutral abstract prompt
+  if (finishReason === "CONTENT_FILTERED" || !artifact?.base64) {
+    console.warn(`[image-gen] NVIDIA prompt was filtered or returned no image (${finishReason}). Retrying with safe abstract visual prompt...`);
+    try {
+      const safePrompt = "modern high technology abstract presentation visual graphic, clean minimal aesthetic, architectural geometric composition, award winning editorial lighting";
+      const retryResponse = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          prompt: safePrompt,
+          width,
+          height,
+          steps,
+          seed: usedSeed + 1,
+        }),
+      });
+
+      if (retryResponse.ok) {
+        const retryJson: any = await retryResponse.json();
+        const retryArtifact = retryJson.artifacts?.[0];
+        if (retryArtifact?.base64 && retryArtifact.finishReason !== "CONTENT_FILTERED") {
+          artifact = retryArtifact;
+          finishReason = "SUCCESS";
+        }
+      }
+    } catch (retryErr) {
+      console.warn("[image-gen] Safe prompt retry failed:", retryErr);
+    }
   }
 
-  if (!artifact?.base64) {
-    return buildError(
-      "PROVIDER_ERROR",
-      "NVIDIA API response contained no image data.",
-      false
-    );
+  // If still filtered or no image data, fall back gracefully to a curated high-res stock photo
+  if (finishReason === "CONTENT_FILTERED" || !artifact?.base64) {
+    console.warn("[image-gen] Content still filtered by provider policies, resolving with curated presentation stock fallback.");
+    const fallbackUrl = getStockFallback(prompt);
+    return {
+      url: fallbackUrl,
+      storagePath: null,
+      width,
+      height,
+      seed: usedSeed,
+      provider: "curated-stock",
+      generatedAt: new Date().toISOString(),
+    };
   }
 
   const imageBuffer = Buffer.from(artifact.base64, "base64");
@@ -338,3 +371,30 @@ export async function generateImage(
     generatedAt: new Date().toISOString(),
   };
 }
+
+/**
+ * Curated high-resolution stock photography fallbacks when AI prompts are policy-filtered.
+ */
+function getStockFallback(prompt: string): string {
+  const p = prompt.toLowerCase();
+  if (p.includes("health") || p.includes("medic") || p.includes("bio") || p.includes("clinic") || p.includes("patient") || p.includes("drug")) {
+    return "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1600&q=80";
+  }
+  if (p.includes("finance") || p.includes("market") || p.includes("econom") || p.includes("money") || p.includes("invest") || p.includes("revenue")) {
+    return "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=1600&q=80";
+  }
+  if (p.includes("team") || p.includes("people") || p.includes("leader") || p.includes("collab") || p.includes("work") || p.includes("employee")) {
+    return "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1600&q=80";
+  }
+  if (p.includes("build") || p.includes("city") || p.includes("architect") || p.includes("structure") || p.includes("office")) {
+    return "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80";
+  }
+  if (p.includes("code") || p.includes("cyber") || p.includes("matrix") || p.includes("software") || p.includes("dev") || p.includes("algorithm")) {
+    return "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1600&q=80";
+  }
+  if (p.includes("cloud") || p.includes("network") || p.includes("global") || p.includes("data") || p.includes("energy") || p.includes("grid") || p.includes("power")) {
+    return "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80";
+  }
+  return "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1600&q=80";
+}
+

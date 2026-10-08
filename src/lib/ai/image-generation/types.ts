@@ -45,8 +45,8 @@ export interface GenerateImageResult {
   height: number;
   /** Seed that was used (for reproducibility) */
   seed: number | null;
-  /** Provider that generated the image */
-  provider: "nvidia-flux";
+  /** Provider that generated or resolved the image */
+  provider: "nvidia-flux" | "curated-stock";
   /** ISO 8601 timestamp */
   generatedAt: string;
 }

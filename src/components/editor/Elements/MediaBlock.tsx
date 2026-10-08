@@ -430,7 +430,9 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({
       }
     }).catch((err) => {
       if (isMounted) {
-        setGenerationError(err.message || "Image generation failed");
+        console.warn(`[MediaBlock] Background auto-generation failed for ${elementKey}:`, err.message);
+        // Do not break the visual presentation layout with an error card during background auto-enhancement.
+        // Keep the existing clean SVG fallback visual intact.
         setIsAutoGenerating(false);
       }
     });

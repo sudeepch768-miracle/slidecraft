@@ -32,13 +32,17 @@ export const RegenerateBackgroundModal: React.FC<RegenerateBackgroundModalProps>
   const [reuseForFuture, setReuseForFuture] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  const candidateHistoryIndexRef = React.useRef(candidateHistoryIndex);
+  candidateHistoryIndexRef.current = candidateHistoryIndex;
+
   const generateCandidate = useCallback(() => {
     setIsGenerating(true);
     try {
       const topic = document.meta.title || document.meta.description || "Professional Presentation";
       const newVd = generatePromptThemedBackground(topic);
       setCandidatesHistory((prev) => {
-        const next = candidateHistoryIndex >= 0 ? prev.slice(0, candidateHistoryIndex + 1) : [];
+        const curIdx = candidateHistoryIndexRef.current;
+        const next = curIdx >= 0 ? prev.slice(0, curIdx + 1) : [];
         next.push(newVd);
         return next;
       });
@@ -49,15 +53,15 @@ export const RegenerateBackgroundModal: React.FC<RegenerateBackgroundModalProps>
     } finally {
       setIsGenerating(false);
     }
-  }, [document.meta.title, document.meta.description, candidateHistoryIndex]);
+  }, [document.meta.title, document.meta.description]);
 
-  const handlePreviousCandidate = () => {
+  const handlePreviousCandidate = useCallback(() => {
     if (candidateHistoryIndex > 0) {
       const prevIdx = candidateHistoryIndex - 1;
       setCandidateHistoryIndex(prevIdx);
       setCandidate(candidatesHistory[prevIdx]);
     }
-  };
+  }, [candidateHistoryIndex, candidatesHistory]);
 
   // Check if a preferred style was already saved
   useEffect(() => {
@@ -69,12 +73,20 @@ export const RegenerateBackgroundModal: React.FC<RegenerateBackgroundModalProps>
     }
   }, []);
 
-  // Generate an initial candidate on modal open
+  // Generate an initial candidate strictly on modal open
   useEffect(() => {
     if (isOpen) {
-      generateCandidate();
+      const topic = document.meta.title || document.meta.description || "Professional Presentation";
+      const initialVd = generatePromptThemedBackground(topic);
+      setCandidatesHistory([initialVd]);
+      setCandidateHistoryIndex(0);
+      setCandidate(initialVd);
+    } else {
+      setCandidatesHistory([]);
+      setCandidateHistoryIndex(-1);
+      setCandidate(null);
     }
-  }, [isOpen, generateCandidate]);
+  }, [isOpen]);
 
   const handleApplyStyle = () => {
     if (!candidate) return;

@@ -50,11 +50,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       .map((n: string) => n[0])
       .join("")
       .slice(0, 2)
-      .toUpperCase() || "GA";
+      .toUpperCase() || "SC";
 
   const MAIN_NAV = [
     { label: "Home", href: "/", icon: Home },
-    { label: "All gammas", href: "/dashboard", icon: FileText },
+    { label: "All presentations", href: "/dashboard", icon: FileText },
     { label: "Recent", href: "/dashboard?filter=recent", icon: Clock },
     { label: "Templates", href: "/create", icon: LayoutGrid },
     { label: "Custom themes", href: "/settings?tab=themes", icon: Palette },
@@ -204,11 +204,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 
       {/* Lower Half: Pro Banner, User & Settings */}
       <div className="p-3 border-t border-border/70 space-y-2.5 bg-muted/10">
-        {/* Gamma Pro Upgrade Card */}
+        {/* SlideCraft Plus Upgrade Card */}
         <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent border border-purple-500/20 text-left">
           <div className="flex items-center gap-1.5 text-xs font-bold text-purple-700 dark:text-purple-300">
             <Zap className="w-3.5 h-3.5 text-purple-500" />
-            <span>Gamma Plus</span>
+            <span>SlideCraft Plus</span>
           </div>
           <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
             Unlimited AI creation, custom fonts & export without watermark.

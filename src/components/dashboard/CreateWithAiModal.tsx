@@ -323,7 +323,7 @@ export const CreateWithAiModal: React.FC<CreateWithAiModalProps> = ({
                     rows={7}
                     value={pasteText}
                     onChange={(e) => setPasteText(e.target.value)}
-                    placeholder="Paste an executive summary, meeting notes, bullet points, or document draft here. Gamma's AI will parse the structure, design cards, and extract key metrics..."
+                    placeholder="Paste an executive summary, meeting notes, bullet points, or document draft here. SlideCraft's AI will parse the structure, design cards, and extract key metrics..."
                     className="w-full text-sm bg-muted/30 border border-border/80 rounded-xl p-3.5 focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground placeholder:text-muted-foreground/60 transition-all font-mono text-xs leading-relaxed resize-none"
                   />
                 </div>

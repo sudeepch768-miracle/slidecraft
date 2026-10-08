@@ -1338,7 +1338,7 @@ export default function GammaLandingPage() {
               Restyle your entire creation in a single click
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground max-w-xl mx-auto">
-              Never manually re-color 40 boxes. Gamma themes automatically adapt colors, typography,
+              Never manually re-color 40 boxes. SlideCraft themes automatically adapt colors, typography,
               border radiuses, and contrast across all formats.
             </p>
           </div>

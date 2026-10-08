@@ -150,13 +150,13 @@ function DashboardContent() {
   });
 
   return (
-    <AppShell title="All gammas" subtitle="Workspace">
+    <AppShell title="All presentations" subtitle="Workspace">
       <div className="max-w-6xl mx-auto space-y-8 pb-20">
         {/* ─── 1. Workspace Header & Actions Bar ────────────────────────────── */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border/70 pb-5">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-              <span>All gammas</span>
+              <span>All presentations</span>
               <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/70">
                 {projects.length}
               </span>
@@ -174,7 +174,7 @@ function DashboardContent() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search gammas..."
+                placeholder="Search presentations..."
                 className="w-full text-xs pl-8.5 pr-3 py-2 rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary shadow-xs"
               />
             </div>

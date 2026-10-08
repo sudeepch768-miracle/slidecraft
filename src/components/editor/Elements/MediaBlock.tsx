@@ -39,6 +39,7 @@ interface MediaBlockProps {
 // Global registries to prevent duplicate in-flight requests and reuse generated results
 const generationPromiseMap = new Map<string, Promise<string | null>>();
 const generatedUrlCache = new Map<string, string>();
+const attemptedGenerationMap = new Set<string>();
 
 /**
  * Checks if a text string resembles an internal image prompt rather than an editorial caption.
@@ -80,6 +81,8 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({
 }) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
@@ -362,10 +365,17 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({
       return;
     }
 
+    // Prevent repeated automatic generation attempts for the same element
+    if (attemptedGenerationMap.has(elementKey)) {
+      setIsAutoGenerating(false);
+      return;
+    }
+    attemptedGenerationMap.add(elementKey);
+
     let isMounted = true;
 
     const commitToStore = (url: string) => {
-      onUpdate?.({
+      onUpdateRef.current?.({
         url,
         src: url,
         provider: "nvidia-flux",
@@ -440,9 +450,10 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [element.id, isSvgPlaceholder, effectivePrompt, elementKey, element.aspectRatio, onUpdate]);
+  }, [element.id, isSvgPlaceholder, effectivePrompt, elementKey, element.aspectRatio]);
 
   const handleRetry = () => {
+    attemptedGenerationMap.delete(elementKey);
     generatedUrlCache.delete(elementKey);
     generationPromiseMap.delete(elementKey);
     setGenerationError(null);

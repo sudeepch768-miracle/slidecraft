@@ -361,6 +361,10 @@ export async function generateImage(
     publicUrl = `data:image/png;base64,${artifact.base64}`;
   }
 
+  if (!publicUrl) {
+    publicUrl = `data:image/png;base64,${artifact.base64}`;
+  }
+
   return {
     url: publicUrl,
     storagePath: finalStoragePath,

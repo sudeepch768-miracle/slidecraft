@@ -15,4 +15,4 @@ export type {
 
 export { ASPECT_RATIO_DIMENSIONS, FORMAT_DEFAULT_ASPECT_RATIO } from "./types";
 
-export { generateImage, listNvidiaModels } from "./nvidia-flux-provider";
+export { generateImage, listNvidiaModels, sanitizePromptForCleanImagery } from "./nvidia-flux-provider";

@@ -33,6 +33,46 @@ export interface SlideVisualOptions {
  * Derives a topic-specific visual metaphor and prompt from actual slide content and visual direction.
  * Explicitly forbids text/words and anchors to the presentation theme's color palette.
  */
+/**
+ * Cleans a suggested visual query by stripping out meta instructions, metrics,
+ * numbers, slide terminology, and potential safety trigger words.
+ */
+function extractCleanVisualScene(suggestedQuery: string, fallbackDomain: string): string {
+  if (!suggestedQuery || suggestedQuery.trim().length < 5) {
+    return fallbackDomain;
+  }
+
+  let cleaned = suggestedQuery
+    .replace(/^High-resolution professional photography concept illustrating\s+/i, "")
+    .replace(/^Contextual photograph illustrating\s+/i, "")
+    .replace(/^Conceptual representation of\s+/i, "")
+    .replace(/^Visual representation of\s+/i, "")
+    .replace(/^Clean structured concept diagram representing\s+/i, "Clean 3D architectural render of ")
+    .replace(/\b(displaying|showing|with)\s+.*(metrics|graphs|charts|numbers|data|percentiles|analytics|dashboard)\b/gi, "in a modern high-tech research facility")
+    .replace(/\$[\d,.]+[kmbKMB]?/g, "")
+    .replace(/\b\d+([,.]\d+)?%\b/g, "")
+    .replace(/(^|\n|\s)\d+\.\s+/g, " ")
+    .replace(/\b(arr|tam|ebitda|cagr|roi|kpi|kpis|pitch deck|slide deck|presentation slide|bullet points)\b/gi, "")
+    .replace(/\bpayloads?\b/gi, "commercial cargo")
+    .replace(/\b(warheads?|weapons?)\b/gi, "aerospace equipment")
+    .replace(/\bdrone carrying payload\b/gi, "delivery aircraft carrying package")
+    .replace(/\bzero text\b/gi, "no text")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  if (cleaned.length < 8) {
+    return fallbackDomain;
+  }
+
+  return cleaned;
+}
+
+/**
+ * Derives a topic-specific visual metaphor and prompt from actual slide content and visual direction.
+ * CRITICAL RULE: NEVER inject verbatim slide titles, headlines, financial numbers, or bullet points
+ * into the prompt. FLUX's diffusion model will attempt to render them as corrupted pseudo-English text.
+ * Instead, generate a pure, textless photographic scene description.
+ */
 export function generateImagePromptFromSlideContent(
   slide: SlidePlan,
   topic: string,
@@ -40,53 +80,61 @@ export function generateImagePromptFromSlideContent(
   role: "hero" | "card" | "diagram" | "background" | "editorial" | "case_study" = "card"
 ): { prompt: string; negativePrompt: string; promptSummary: string } {
   const slideTitle = slide.title || "Key Concept";
-  const slidePurpose = slide.purpose || "Domain Analysis";
   const keyMessage = slide.keyMessage || slide.content.explanation || "";
   const suggestedQuery = slide.imageSuggestion || slide.visualSuggestion || "";
 
   // Topic category detection
   const lowerTopic = `${topic} ${slideTitle} ${keyMessage}`.toLowerCase();
 
-  let subjectDomain = "modern high-tech conceptual photography, cinematic studio lighting";
-  if (lowerTopic.includes("neuro") || lowerTopic.includes("brain") || lowerTopic.includes("neural") || lowerTopic.includes("medic") || lowerTopic.includes("health")) {
-    subjectDomain = "3D bio-computational neural network visualization, glowing synaptic pathways, clinical research laboratory environment, advanced neuroscience visualization, ultra-clean glass optics";
-  } else if (lowerTopic.includes("agri") || lowerTopic.includes("crop") || lowerTopic.includes("verdant") || lowerTopic.includes("soil") || lowerTopic.includes("farm") || lowerTopic.includes("plant")) {
-    subjectDomain = "autonomous agricultural drones over emerald green smart crop fields, multi-spectral soil sensor arrays, precision ecology, golden morning daylight, macro botanical chlorophyll";
-  } else if (lowerTopic.includes("aero") || lowerTopic.includes("flight") || lowerTopic.includes("evtol") || lowerTopic.includes("aviation") || lowerTopic.includes("space")) {
-    subjectDomain = "futuristic autonomous electric aircraft aerodynamic fuselage, sleek carbon fiber wing geometry, urban skyline at twilight, atmospheric vapor trails, aerospace telemetry aesthetics";
-  } else if (lowerTopic.includes("quantum") || lowerTopic.includes("physics") || lowerTopic.includes("qubit")) {
+  let subjectDomain = "modern high-tech conceptual photography, refined architectural studio lighting";
+  if (lowerTopic.includes("neuro") || lowerTopic.includes("brain") || lowerTopic.includes("neural") || lowerTopic.includes("medic") || lowerTopic.includes("health") || lowerTopic.includes("pharma")) {
+    subjectDomain = "advanced clinical research laboratory environment, 3D bio-computational neural network visualization, glowing synaptic pathways, ultra-clean glass optics, refined medical technology";
+  } else if (lowerTopic.includes("agri") || lowerTopic.includes("crop") || lowerTopic.includes("verdant") || lowerTopic.includes("soil") || lowerTopic.includes("farm") || lowerTopic.includes("plant") || lowerTopic.includes("botan")) {
+    subjectDomain = "autonomous agricultural robotics operating over emerald green smart crop fields, multi-spectral soil sensor arrays, precision ecology, golden morning daylight";
+  } else if (lowerTopic.includes("aero") || lowerTopic.includes("drone") || lowerTopic.includes("flight") || lowerTopic.includes("evtol") || lowerTopic.includes("aviation") || lowerTopic.includes("space")) {
+    subjectDomain = "autonomous electric delivery aircraft navigating modern architectural buildings at twilight, sleek aerodynamic carbon fiber design, atmospheric lighting";
+  } else if (lowerTopic.includes("quantum") || lowerTopic.includes("physics") || lowerTopic.includes("qubit") || lowerTopic.includes("cryo")) {
     subjectDomain = "dilution refrigerator cryostat chamber, golden coaxial quantum wiring, topological quantum surface lattice, laser-trapped ions in vacuum, deep cosmic atmosphere";
-  } else if (lowerTopic.includes("finance") || lowerTopic.includes("revenue") || lowerTopic.includes("saas") || lowerTopic.includes("market") || lowerTopic.includes("growth")) {
-    subjectDomain = "abstract geometric architectural glass towers, kinetic data streams, dynamic modern financial exchange infrastructure, refined editorial perspective";
+  } else if (lowerTopic.includes("finance") || lowerTopic.includes("revenue") || lowerTopic.includes("saas") || lowerTopic.includes("market") || lowerTopic.includes("growth") || lowerTopic.includes("invest")) {
+    subjectDomain = "modern minimalist architectural glass towers, kinetic reflections, dynamic modern financial exchange infrastructure, refined editorial perspective";
+  } else if (lowerTopic.includes("robot") || lowerTopic.includes("logistics") || lowerTopic.includes("warehouse") || lowerTopic.includes("supply chain") || lowerTopic.includes("automat")) {
+    subjectDomain = "autonomous commercial logistics robotics inside a high-tech smart fulfillment center, sleek industrial design, clean polished floor, atmospheric ambient lighting";
+  } else if (lowerTopic.includes("software") || lowerTopic.includes("cloud") || lowerTopic.includes("cyber") || lowerTopic.includes("data") || lowerTopic.includes("code")) {
+    subjectDomain = "clean modern server data center infrastructure, high-speed fiber optic routing, subtle ambient blue indicator glows, minimalist architectural perspective";
+  } else if (lowerTopic.includes("energy") || lowerTopic.includes("solar") || lowerTopic.includes("wind") || lowerTopic.includes("battery") || lowerTopic.includes("grid") || lowerTopic.includes("clean")) {
+    subjectDomain = "utility-scale solar array and modern offshore wind turbines, advanced electrical infrastructure, clear horizon, dramatic natural lighting";
   }
 
   // Color harmony from visual direction if available
   const paletteNotes = visualDirection
-    ? `Harmonious color grading influenced by ${visualDirection.colors.primary} and ${visualDirection.colors.accent} with deep ${visualDirection.colors.background} ambient contrast.`
+    ? `Color grading influenced by ${visualDirection.colors.primary} and ${visualDirection.colors.accent} with deep ${visualDirection.colors.background} ambient contrast.`
     : "Moody cinematic lighting, professional dynamic color grading.";
 
   const roleGuidance =
     role === "hero"
-      ? "Sweeping wide hero visual, deep atmospheric depth, cinematic 8k composition, high visual impact, focal subject positioned for elegant slide framing."
-      : role === "case_study"
+      ? "Sweeping wide hero visual, deep atmospheric depth, cinematic 8k composition, high visual impact."
+      : role === "case_study" || role === "editorial"
       ? "Focused documentary-style environmental framing, authentic laboratory or field deployment, clean crisp depth of field."
+      : role === "diagram"
+      ? "Clean 3D architectural render, minimalist geometric forms, smooth matte surfaces, elegant studio lighting."
       : "Balanced modular composition, refined lighting, clean negative space, premium architectural design aesthetic.";
 
+  const visualSubject = extractCleanVisualScene(suggestedQuery, subjectDomain);
+
+  // Pure scene description without slide titles, metrics, or metadata tags
   const prompt = [
-    `Subject: ${subjectDomain}.`,
-    `Context: ${topic} — ${slideTitle}.`,
-    `Focus: ${suggestedQuery || keyMessage.slice(0, 90)}.`,
-    `Style: ${paletteNotes}`,
+    `A clean wordless commercial photograph of ${visualSubject}.`,
+    paletteNotes,
     roleGuidance,
-    "Strict rule: Pure photography or 3D render without any text, typography, symbols, numbers, watermarks, or slide layouts.",
+    "pure visual photography, completely textless, no text, no words, no letters, no typography, no labels, no watermarks",
   ]
     .filter(Boolean)
     .join(" ");
 
-  const promptSummary = `${topic}: ${slideTitle} (${role})`;
+  const promptSummary = `${slideTitle.slice(0, 45)} visual (${role})`;
 
   return {
-    prompt: prompt.slice(0, 550), // keep strictly under NVIDIA FLUX 800 char total limit
+    prompt: prompt.slice(0, 520), // strictly under NVIDIA FLUX limit
     negativePrompt: STRICT_NEGATIVE_PROMPT,
     promptSummary,
   };

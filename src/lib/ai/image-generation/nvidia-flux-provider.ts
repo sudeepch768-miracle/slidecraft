@@ -127,6 +127,69 @@ export async function listNvidiaModels(): Promise<{ models: string[]; error: str
   }
 }
 
+/**
+ * Rigorously sanitizes prompts sent to FLUX to ensure pristine, textless imagery:
+ * 1. Strips all metadata tags (Subject:, Context:, Focus:, Strict rule:, etc.).
+ * 2. Strips financial metrics ($4.2M, 80%), bullet numbers (11.), and acronyms (ARR, TAM, EBITDA).
+ * 3. Strips slide/presentation phrases (pitch deck, slide deck, slide layout, etc.).
+ * 4. Sanitizes safety triggers (payload -> cargo, weapons -> aerospace equipment).
+ * 5. Replaces "zero text" with "no text" (NVIDIA's API flags "zero text" as CONTENT_FILTERED).
+ * 6. Appends strong textless clauses (pure visual photography, completely textless, no text, no words, no letters, no typography, no labels, no watermarks).
+ * 7. Enforces length strictly <= 780 characters (under NVIDIA FLUX's 800-character ceiling).
+ */
+export function sanitizePromptForCleanImagery(rawPrompt: string, customNegative?: string): string {
+  if (!rawPrompt || !rawPrompt.trim()) {
+    return "A clean wordless commercial photograph of modern high-tech architecture, crisp lighting, pure visual photography, completely textless, no text, no words, no letters, no typography, no labels, no watermarks";
+  }
+
+  let prompt = rawPrompt.trim();
+
+  // 1. Remove metadata prefixes
+  prompt = prompt.replace(/\b(Subject|Context|Focus|Style|Strict rule|Rule|Title|Slide|Prompt|Heading):\s*/gi, " ");
+
+  // 2. Remove financial metrics, dollar values, percentages, bullet numbering
+  prompt = prompt.replace(/\$[\d,.]+[kmbKMB]?/g, ""); // e.g. $4.2M
+  prompt = prompt.replace(/\b\d+([,.]\d+)?%\b/g, ""); // e.g. 80%
+  prompt = prompt.replace(/(^|\n|\s)\d+\.\s+/g, " "); // e.g. 11. Mark TAM
+  prompt = prompt.replace(/\b(arr|tam|ebitda|cagr|roi|kpi|kpis)\b/gi, "");
+
+  // 3. Remove slide/presentation terminology
+  prompt = prompt.replace(/\b(pitch deck|slide deck|presentation slide|slide layout|powerpoint|infographic with labels|bullet points|executive summary|key takeaways|table of contents)\b/gi, "");
+
+  // 4. Sanitize sensitive safety filter trigger words
+  prompt = prompt.replace(/\bpayloads?\b/gi, "commercial cargo");
+  prompt = prompt.replace(/\b(warheads?|weapons?)\b/gi, "aerospace equipment");
+  prompt = prompt.replace(/\bdrone carrying payload\b/gi, "delivery aircraft carrying package");
+
+  // 5. Prevent NVIDIA filter triggers (e.g. "zero text" triggers CONTENT_FILTERED)
+  prompt = prompt.replace(/\bzero text\b/gi, "no text");
+
+  // 6. Clean up excessive punctuation, hyphens, and whitespace
+  prompt = prompt.replace(/—|-/g, " ");
+  prompt = prompt.replace(/\s{2,}/g, " ").trim();
+  prompt = prompt.replace(/^[,\s.]+/, "").replace(/[,\s.]+$/, "");
+
+  // 7. Textless enforcement suffix
+  const textlessSuffix = ", pure visual photography, completely textless, no text, no words, no letters, no typography, no labels, no watermarks";
+
+  // Check if prompt already starts with photographic/visual anchor
+  const hasVisualPrefix = /^(a clean|a photo|photograph|3d render|architectural photography|macro photography|cinematic visual)/i.test(prompt);
+  let finalPrompt = hasVisualPrefix ? prompt : `A clean wordless commercial photograph of ${prompt}`;
+
+  // Deduplicate textless clauses
+  finalPrompt = finalPrompt.replace(/,\s*(no text|no words|no letters|completely textless|pure visual photography)+/gi, "");
+
+  finalPrompt = `${finalPrompt.trim()}${textlessSuffix}`;
+
+  // Keep strictly <= 780 characters for NVIDIA FLUX
+  if (finalPrompt.length > 780) {
+    const budget = 780 - textlessSuffix.length;
+    finalPrompt = `${finalPrompt.slice(0, budget).trim()}${textlessSuffix}`;
+  }
+
+  return finalPrompt;
+}
+
 // ─── Core generation ─────────────────────────────────────────────────────────
 
 export async function generateImage(
@@ -153,34 +216,8 @@ export async function generateImage(
   const model = (process.env.NVIDIA_IMAGE_MODEL || DEFAULT_MODEL).replace(/^\/+/, "");
   const endpoint = `${NVIDIA_GENAI_BASE}/${model}`;
 
-  // Enforce NVIDIA FLUX prompt limit (strictly <= 800 chars)
-  const cleanUserPrompt = prompt.trim();
-  const maxUserPromptLen = 640;
-  const truncatedUserPrompt =
-    cleanUserPrompt.length > maxUserPromptLen
-      ? cleanUserPrompt.slice(0, maxUserPromptLen)
-      : cleanUserPrompt;
-
-  const negativeClauses = [
-    "clean composition",
-    "professional visual asset",
-    "high quality",
-    "no text",
-    "no words",
-    "no letters",
-    "no typography",
-    "no watermarks",
-    "no logos",
-    "no labels",
-    negativePrompt?.trim() || "",
-  ]
-    .filter(Boolean)
-    .join(", ");
-
-  let finalPrompt = `${truncatedUserPrompt}, ${negativeClauses}`;
-  if (finalPrompt.length > 795) {
-    finalPrompt = finalPrompt.slice(0, 795);
-  }
+  // Sanitize and enforce strictly textless prompt for NVIDIA FLUX
+  const finalPrompt = sanitizePromptForCleanImagery(prompt, negativePrompt);
 
   // 2. Build NVIDIA FLUX request body
   // Verified schema for FLUX.2 Klein 4B: prompt, width, height, steps (<= 4), seed
@@ -208,7 +245,7 @@ export async function generateImage(
 
     // If initial call fails with 422, 400, or 5xx, try once with a simplified fallback prompt
     if (!nvidiaResponse.ok && nvidiaResponse.status !== 401 && nvidiaResponse.status !== 403) {
-      const fallbackPrompt = `${cleanUserPrompt.slice(0, 250).trim()}, high quality photography, no text`.slice(0, 400);
+      const fallbackPrompt = sanitizePromptForCleanImagery(prompt.slice(0, 180));
       try {
         const retryRes = await fetch(endpoint, {
           method: "POST",

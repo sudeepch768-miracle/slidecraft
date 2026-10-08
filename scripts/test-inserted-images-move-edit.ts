@@ -13,7 +13,7 @@
 import { DocumentSpec, ContentElement, MediaElement, PageSpec } from "../src/types/document-spec";
 import { useEditorStore } from "../src/store/editor-store";
 import { checkBoundaryViolations } from "../src/lib/quality/quality-rules";
-import { autoRepairDocument } from "../src/lib/quality/auto-repair-engine";
+import { executeAllAutoRepairs } from "../src/lib/quality/auto-repair-engine";
 import { compileDocumentToPptx } from "../src/lib/compiler/pptx/pptx-builder";
 import assert from "assert";
 

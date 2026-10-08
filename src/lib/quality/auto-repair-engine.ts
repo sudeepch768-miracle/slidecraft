@@ -568,3 +568,6 @@ export function executeAllAutoRepairs(doc: DocumentSpec): AutoRepairAction[] {
     ...repairAspectRatios(doc),
   ];
 }
+
+export const autoRepairDocument = executeAllAutoRepairs;
+

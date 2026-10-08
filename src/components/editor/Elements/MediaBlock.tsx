@@ -17,6 +17,7 @@ import {
   Square,
   Check,
   RefreshCw,
+  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ImageRegenerationModal } from "../ImageRegenerationModal";
@@ -106,6 +107,7 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({
 
   // Live Position while manipulating
   const [livePos, setLivePos] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const hasMovedRef = useRef(false);
 
   const effectivePrompt = element.prompt || element.promptSummary || element.alt;
   const elementKey = element.id || `${slideId}-${effectivePrompt?.slice(0, 30)}`;
@@ -179,13 +181,13 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({
         }
       }
 
+      hasMovedRef.current = false;
       setDragState({
         isDragging: true,
         startX: e.clientX,
         startY: e.clientY,
         initialPos: currentBox,
       });
-      setLivePos(currentBox);
     },
     [pos, onSelect, slideContainerRef]
   );
@@ -244,8 +246,16 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({
       if (slideRect.width <= 0 || slideRect.height <= 0) return;
 
       if (dragState) {
-        const deltaX_pct = ((e.clientX - dragState.startX) / slideRect.width) * 100;
-        const deltaY_pct = ((e.clientY - dragState.startY) / slideRect.height) * 100;
+        const deltaX = e.clientX - dragState.startX;
+        const deltaY = e.clientY - dragState.startY;
+
+        if (!hasMovedRef.current && Math.hypot(deltaX, deltaY) > 4) {
+          hasMovedRef.current = true;
+        }
+        if (!hasMovedRef.current) return;
+
+        const deltaX_pct = (deltaX / slideRect.width) * 100;
+        const deltaY_pct = (deltaY / slideRect.height) * 100;
 
         const w = dragState.initialPos.width;
         const h = dragState.initialPos.height;
@@ -259,6 +269,7 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({
           height: h,
         });
       } else if (resizeState) {
+        hasMovedRef.current = true;
         const deltaX_pct = ((e.clientX - resizeState.startX) / slideRect.width) * 100;
         const deltaY_pct = ((e.clientY - resizeState.startY) / slideRect.height) * 100;
         const init = resizeState.initialPos;
@@ -300,9 +311,10 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({
     };
 
     const handlePointerUp = () => {
-      if (livePos) {
+      if (hasMovedRef.current && livePos) {
         onUpdate?.({ position: livePos });
       }
+      hasMovedRef.current = false;
       setDragState(null);
       setResizeState(null);
     };
@@ -638,6 +650,26 @@ export const MediaBlock: React.FC<MediaBlockProps> = ({
             >
               <ArrowDown className="w-3.5 h-3.5" />
             </button>
+          )}
+
+          {/* Snap Back to Grid / Reset Freeform Position */}
+          {element.position && (
+            <>
+              <div className="w-[1px] h-3.5 bg-border mx-0.5" />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLivePos(null);
+                  onUpdate?.({ position: undefined });
+                }}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-full hover:bg-muted text-[10px] font-bold text-amber-500 hover:text-amber-600 transition-colors"
+                title="Snap image back into slide layout grid"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span className="hidden sm:inline">Snap to Grid</span>
+              </button>
+            </>
           )}
 
           {/* Delete Element */}

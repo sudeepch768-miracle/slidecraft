@@ -469,7 +469,7 @@ export const SettingsPanel: React.FC = () => {
                         caption: "Visual illustration",
                         fit: "cover",
                         borderRadius: 12,
-                        position: { x: 50, y: 22, width: 42, height: 50 },
+                        position: { x: 56, y: 20, width: 40, height: 54 },
                       })
                     }
                     className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-border/80 bg-muted/30 hover:bg-muted text-[11px] font-medium text-foreground transition-colors"

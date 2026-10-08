@@ -113,12 +113,7 @@ export const StudioTopNav: React.FC = () => {
     user?.email?.split("@")[0] ||
     "Creator";
 
-  // Automatically open Customize drawer if user selects an element on the canvas
-  useEffect(() => {
-    if (selectedElementId) {
-      setActiveDrawer("customize");
-    }
-  }, [selectedElementId]);
+  // Note: Automatic drawer opening on canvas element selection was removed so users can move/edit images without an intrusive side panel blocking the canvas.
 
   // Image Search
   const handleSearchImages = async (query: string) => {
@@ -155,10 +150,9 @@ export const StudioTopNav: React.FC = () => {
       alt: img.alt || "Presentation Image",
       fit: "cover",
       borderRadius: 12,
-      position: { x: 50, y: 22, width: 42, height: 50 },
+      position: { x: 56, y: 20, width: 40, height: 54 },
     };
     addElementToActivePage(newElement);
-    setActiveDrawer("customize");
   };
 
   // Export handlers
@@ -429,6 +423,24 @@ export const StudioTopNav: React.FC = () => {
           >
             <span className="font-mono text-[11px] uppercase">{document.canvas.aspectRatio}</span>
           </button>
+
+          {/* Optional Manual Customize Trigger (only when element is selected) */}
+          {selectedElementId && (
+            <button
+              type="button"
+              onClick={() => setActiveDrawer(activeDrawer === "customize" ? null : "customize")}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all",
+                activeDrawer === "customize"
+                  ? "bg-purple-600 text-white shadow-sm"
+                  : "bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20"
+              )}
+              title="Element properties & customization"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Properties</span>
+            </button>
+          )}
         </nav>
 
         {/* Right: Undo/Redo, Presenter, Export, Theme, User */}
@@ -895,7 +907,7 @@ export const StudioTopNav: React.FC = () => {
                             alt: "Visual Concept",
                             fit: "cover",
                             borderRadius: 12,
-                            position: { x: 50, y: 22, width: 42, height: 50 },
+                            position: { x: 56, y: 20, width: 40, height: 54 },
                           }),
                       },
                     ].map((item, i) => {
@@ -939,10 +951,9 @@ export const StudioTopNav: React.FC = () => {
                       alt: "AI-Generated Image",
                       fit: "cover",
                       borderRadius: 12,
-                      position: { x: 50, y: 22, width: 42, height: 50 },
+                      position: { x: 56, y: 20, width: 40, height: 54 },
                     };
                     addElementToActivePage(newElement);
-                    setActiveDrawer("customize");
                   }}
                   documentFormat={document.documentType ?? "presentation"}
                   projectId={projectId ?? undefined}

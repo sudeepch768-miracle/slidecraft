@@ -457,7 +457,7 @@ export const LeftSidebar: React.FC = () => {
                                   caption: img.attributionText || img.alt,
                                   fit: "cover",
                                   borderRadius: 12,
-                                  position: { x: 50, y: 22, width: 42, height: 50 },
+                                  position: { x: 56, y: 20, width: 40, height: 54 },
                                 });
                               }}
                               className="w-full text-[10px] font-bold py-1 bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity"
@@ -532,7 +532,7 @@ export const LeftSidebar: React.FC = () => {
                                   caption: "Uploaded Asset",
                                   fit: "cover",
                                   borderRadius: 12,
-                                  position: { x: 50, y: 22, width: 42, height: 50 },
+                                  position: { x: 56, y: 20, width: 40, height: 54 },
                                 });
                               }}
                               className="w-full text-[10px] font-bold py-1 bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity"

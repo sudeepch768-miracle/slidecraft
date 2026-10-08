@@ -774,70 +774,80 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
       )}
 
       {/* 9. Presentation: Hero Title Layout (60/40 Asymmetric Split when Media is present) */}
-      {isPresentation && page.archetype === "hero_title" && (
-        <div className="flex-1 flex flex-col justify-center my-auto w-full z-10">
-          {mediaElement ? (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center w-full">
-              {/* Left 60% Content Rail */}
-              <div className="lg:col-span-7 flex flex-col gap-4 text-left">
-                {displayBadge && (
-                  <span
+      {isPresentation && page.archetype === "hero_title" && (() => {
+        const anyMedia = page.elements.find((e) => e.type === "media");
+        const inlineMedia = anyMedia && !positionedMediaIds.has(anyMedia.id) ? anyMedia : null;
+
+        if (anyMedia) {
+          return (
+            <div className="flex-1 flex flex-col justify-center my-auto w-full z-10">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center w-full">
+                {/* Left 60% Content Rail */}
+                <div className="lg:col-span-7 flex flex-col gap-4 text-left">
+                  {displayBadge && (
+                    <span
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={(e) => onUpdateBadge?.(e.currentTarget.textContent || "")}
+                      className="text-xs font-black uppercase tracking-widest px-3.5 py-1 rounded-full outline-none focus:ring-1 focus:ring-primary/40 cursor-text w-fit border shadow-sm"
+                      style={{
+                        backgroundColor: `${theme.colors.secondary}15`,
+                        borderColor: `${theme.colors.secondary}30`,
+                        color: theme.colors.secondary,
+                      }}
+                    >
+                      {displayBadge}
+                    </span>
+                  )}
+                  <h1
                     contentEditable
                     suppressContentEditableWarning
-                    onBlur={(e) => onUpdateBadge?.(e.currentTarget.textContent || "")}
-                    className="text-xs font-black uppercase tracking-widest px-3.5 py-1 rounded-full outline-none focus:ring-1 focus:ring-primary/40 cursor-text w-fit border shadow-sm"
+                    onBlur={(e) => onUpdateTitle?.(e.currentTarget.textContent || page.title)}
+                    className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.15] outline-none focus:bg-primary/5 rounded px-1 -mx-1 cursor-text"
                     style={{
-                      backgroundColor: `${theme.colors.secondary}15`,
-                      borderColor: `${theme.colors.secondary}30`,
-                      color: theme.colors.secondary,
+                      color: theme.colors.textPrimary,
+                      fontFamily: theme.typography.headingFont,
                     }}
                   >
-                    {displayBadge}
-                  </span>
-                )}
-                <h1
-                  contentEditable
-                  suppressContentEditableWarning
-                  onBlur={(e) => onUpdateTitle?.(e.currentTarget.textContent || page.title)}
-                  className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.15] outline-none focus:bg-primary/5 rounded px-1 -mx-1 cursor-text"
+                    {page.title}
+                  </h1>
+                  {(page.subtitle || onUpdateSubtitle) && (
+                    <p
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={(e) => onUpdateSubtitle?.(e.currentTarget.textContent || "")}
+                      className="text-base sm:text-lg font-normal leading-relaxed opacity-90 max-w-xl outline-none focus:bg-primary/5 rounded px-1 -mx-1 cursor-text"
+                      style={{
+                        color: theme.colors.textSecondary,
+                        fontFamily: theme.typography.bodyFont,
+                      }}
+                    >
+                      {page.subtitle || "Add presentation subtitle..."}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-3 pt-4">
+                    {page.elements.filter((e) => e.type !== "media").map(renderElement)}
+                  </div>
+                </div>
+
+                {/* Right 40% Visual Asset Container */}
+                <div
+                  className="lg:col-span-5 h-[300px] lg:h-[380px] w-full rounded-2xl overflow-hidden border shadow-2xl relative flex items-center justify-center"
                   style={{
-                    color: theme.colors.textPrimary,
-                    fontFamily: theme.typography.headingFont,
+                    backgroundColor: theme.colors.surface,
+                    borderColor: inlineMedia ? theme.colors.border : `${theme.colors.border}40`,
+                    visibility: inlineMedia ? "visible" : "hidden",
                   }}
                 >
-                  {page.title}
-                </h1>
-                {(page.subtitle || onUpdateSubtitle) && (
-                  <p
-                    contentEditable
-                    suppressContentEditableWarning
-                    onBlur={(e) => onUpdateSubtitle?.(e.currentTarget.textContent || "")}
-                    className="text-base sm:text-lg font-normal leading-relaxed opacity-90 max-w-xl outline-none focus:bg-primary/5 rounded px-1 -mx-1 cursor-text"
-                    style={{
-                      color: theme.colors.textSecondary,
-                      fontFamily: theme.typography.bodyFont,
-                    }}
-                  >
-                    {page.subtitle || "Add presentation subtitle..."}
-                  </p>
-                )}
-                <div className="flex flex-wrap items-center gap-3 pt-4">
-                  {page.elements.filter((e) => e.id !== mediaElement.id).map(renderElement)}
+                  {inlineMedia && renderElement(inlineMedia)}
                 </div>
               </div>
-
-              {/* Right 40% Visual Asset Container */}
-              <div
-                className="lg:col-span-5 h-[300px] lg:h-[380px] w-full rounded-2xl overflow-hidden border shadow-2xl relative flex items-center justify-center"
-                style={{
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.border,
-                }}
-              >
-                {renderElement(mediaElement)}
-              </div>
             </div>
-          ) : (
+          );
+        }
+
+        return (
+          <div className="flex-1 flex flex-col justify-center my-auto w-full z-10">
             <div className="flex flex-col items-center justify-center text-center gap-6 max-w-4xl mx-auto my-auto group">
               {displayBadge && (
                 <span
@@ -884,9 +894,9 @@ export const PageRenderer: React.FC<PageRendererProps> = ({
                 {page.elements.map(renderElement)}
               </div>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        );
+      })()}
 
       {/* 10. Presentation: Four Metric Dashboard Layout */}
       {isPresentation &&

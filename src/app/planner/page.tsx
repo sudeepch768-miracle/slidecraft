@@ -28,6 +28,7 @@ function PlannerContent() {
 
   useEffect(() => {
     let isMounted = true;
+    const abortController = new AbortController();
 
     async function initializePlan() {
       setError(null);
@@ -41,6 +42,7 @@ function PlannerContent() {
           const res = await fetch("/api/ai/planner", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            signal: abortController.signal,
             body: JSON.stringify({
               action: "generate_plan",
               prompt: promptParam.trim(),
@@ -57,24 +59,26 @@ function PlannerContent() {
           }
 
           const data = await res.json();
-          if (data.plan && isMounted) {
-            setPlan(data.plan);
+          if (!isMounted) return;
+
+          const planObj = data?.plan || (data?.slidePlans ? data : null);
+          if (planObj && Array.isArray(planObj.slidePlans) && planObj.slidePlans.length > 0) {
+            setPlan(planObj);
             try {
-              localStorage.setItem(LOCAL_STORAGE_PLAN_KEY, JSON.stringify(data.plan));
+              localStorage.setItem(LOCAL_STORAGE_PLAN_KEY, JSON.stringify(planObj));
             } catch {
               // Local storage quota exceeded or private mode
             }
             setIsLoading(false);
             return;
           } else {
-            throw new Error("Invalid plan response received from AI generation engine.");
+            throw new Error(data?.error || "Invalid plan response received from AI generation engine.");
           }
         } catch (err: any) {
+          if (err.name === "AbortError" || !isMounted) return;
           console.error("[Planner Client Error]:", err);
-          if (isMounted) {
-            setError(err.message || "Failed to generate presentation plan from server.");
-            setIsLoading(false);
-          }
+          setError(err.message || "Failed to generate presentation plan from server.");
+          setIsLoading(false);
           return;
         }
       }
@@ -106,6 +110,7 @@ function PlannerContent() {
 
     return () => {
       isMounted = false;
+      abortController.abort();
     };
   }, [promptParam, countParam, toneParam, audienceParam, depthParam, retryTrigger]);
 
